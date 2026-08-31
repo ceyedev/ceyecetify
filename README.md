@@ -9,6 +9,8 @@ This is a WIP version of my custom Spicetify theme. You'll get a dynamic color p
 &nbsp;
 
 ## Installation
+❗IMPORTANT: currently works better on Mac, but Windows and Linux will be supported soon! Live updates also just kinda works (it doesn't)
+
 #### On Mac:
 1. Download the Version that you want to use
 2. Navigate to `~/.config/spicetify/Extensions` and place the "ceyectify" script there
@@ -17,11 +19,12 @@ This is a WIP version of my custom Spicetify theme. You'll get a dynamic color p
 5. Enjoy ;)
 
 #### On Windows:
-1. Download the Version that you want to use
-2. Navigate to `AppData/Roaming/spicetify/Extensions` and place the "ceyectify" script there (powershell command: `cd "$env:APPDATA/spicetify/Extensions`)
-3. Run `spicetify config extensions ceyectify_with_updates.js` or `spicetify config extensions ceyectify_without_updates.js`, depending on which version you want to use
-4. Run `spicetify apply`
-5. Enjoy ;)
+1. Open PowerShell
+2. Run `cd "$env:APPDATA/spicetify/Extensions"`
+3. Run `curl.exe -L "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/ceyectify_with_updates.js" -o ".\ceyectify_with_updates.js"` or `curl.exe -L "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/ceyectify_without_updates.js" -o ".\ceyectify_without_updates.js"`
+5. Run `spicetify config extensions ceyectify_with_updates.js` or `spicetify config extensions ceyectify_without_updates.js`, depending on which version you want to use
+6. Run `spicetify apply`
+7. Enjoy ;)
 
 &nbsp;
 
