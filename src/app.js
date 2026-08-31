@@ -5,7 +5,7 @@ async function main() {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
   
-  Spicetify.showNotification("ceyectify loaded!");
+  Spicetify.showNotification("ceyecetify loaded!");
 }
 
 export default main;

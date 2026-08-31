@@ -1,42 +1,32 @@
-# ceyecetify
+# ceyecetify - /ˈsaɪ stiːfaɪ/
 This is a WIP version of my custom Spicetify theme. You'll get a dynamic color palette based on your current song, a simplified design, and lots more!
-
+❗IMPORTANT: currently works best on Mac, but Windows and Linux will be supported soon!
 
 ## Before Installing
-* Install the `ceyectify_without_updates.js` if you want to use "ceyectify" with a specific version
-* Install the `ceyectify_with_updates.js` if you want to automatically use the latest "ceyectify" version
-
+* Install the `ceyecetify_without_updates.js` if you want to use the current version
+* Install the `ceyecetify_with_updates.js` if you want to automatically use the latest version
 &nbsp;
 
 ## Installation
-❗IMPORTANT: currently works better on Mac, but Windows and Linux will be supported soon! Live updates also just kinda works (it doesn't)
-
-#### On Mac:
-1. Download the Version that you want to use
-2. Navigate to `~/.config/spicetify/Extensions` and place the "ceyectify" script there
-3. Run `spicetify config extensions ceyectify_with_updates.js` or `spicetify config extensions ceyectify_without_updates.js`, depending on which version you want to use
-4. Run `spicetify apply`
-5. Enjoy ;)
+#### On Mac/Linux:
+```
+curl -fsSL "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/.install/unix/install.sh" | bash
+```
 
 #### On Windows:
-Open PowerShell and run
 ```
-powershell -Command "irm 'https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/install.ps1' | iex"
+powershell -Command "irm 'https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/.install/win/install.ps1' | iex"
 ```
 
 &nbsp;
 
-## Remove ceyecetify
-If you decide you don't want to use "ceyecetify" anymore, you can remove it like that:
-
-#### On Mac:
-1. Navigate to `~/.config/spicetify/Extensions`
-2. Run `spicetify config extensions ceyectify_with_updates.js-` or `spicetify config extensions ceyectify_without_updates.js-`, depending on which version you installed
-3. Delete the file
-4. Run `spicetify apply`
+### Uninstall ceyecetify
+#### On Mac/Linux:
+```
+curl -fsSL "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/.install/unix/uninstall.sh" | bash
+```
 
 #### On Windows:
-Open PowerShell and run
 ```
-powershell -Command "irm 'https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/uninstall.ps1' | iex"
+powershell -Command "irm 'https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/.install/win/uninstall.ps1' | iex"
 ```

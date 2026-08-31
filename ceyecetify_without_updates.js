@@ -2,13 +2,13 @@
         while (!Spicetify.React || !Spicetify.ReactDOM) {
           await new Promise(resolve => setTimeout(resolve, 10));
         }
-        var ceyectify = (() => {
+        var ceyecetify = (() => {
   // src/app.js
   async function main() {
     while (!(Spicetify == null ? void 0 : Spicetify.showNotification)) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    Spicetify.showNotification("ceyectify loaded!");
+    Spicetify.showNotification("ceyecetify loaded!");
   }
   var app_default = main;
   var observer = new MutationObserver(() => {
@@ -464,9 +464,9 @@
   })();
 })();
 (async () => {
-    if (!document.getElementById(`ceyectify`)) {
+    if (!document.getElementById(`ceyecetify`)) {
       var el = document.createElement('style');
-      el.id = `ceyectify`;
+      el.id = `ceyecetify`;
       el.textContent = (String.raw`
   /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-33041-3H24KAvheRy9/1a0588d0fbb0/style.css */
 :root {
