@@ -19,12 +19,10 @@ This is a WIP version of my custom Spicetify theme. You'll get a dynamic color p
 5. Enjoy ;)
 
 #### On Windows:
-1. Open PowerShell
-2. Run `cd "$env:APPDATA/spicetify/Extensions"`
-3. Run `curl.exe -L "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/ceyectify_with_updates.js" -o ".\ceyectify_with_updates.js"` or `curl.exe -L "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/ceyectify_without_updates.js" -o ".\ceyectify_without_updates.js"`
-5. Run `spicetify config extensions ceyectify_with_updates.js` or `spicetify config extensions ceyectify_without_updates.js`, depending on which version you want to use
-6. Run `spicetify apply`
-7. Enjoy ;)
+Open PowerShell and run
+```
+powershell -Command "irm 'https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/install.ps1' | iex"
+```
 
 &nbsp;
 
