@@ -1,18 +1,18 @@
 Set-Location "$env:APPDATA/spicetify/Extensions"
 
 Clear-Host
+Write-Host "Welcome to the"
 Write-Host "
-                                  __  .__  _____       
-  ____  ____ ___.__. ____   _____/  |_|__|/ ____\__.__.
-_/ ___\/ __ <   |  |/ __ \_/ ___\   __\  \   __<   |  |
-\  \__\  ___/\___  \  ___/\  \___|  | |  ||  |  \___  |
- \___  >___  > ____|\___  >\___  >__| |__||__|  / ____|
-     \/    \/\/         \/     \/               \/     
+                             __  _ ____     
+  ________  __  _____  _____/ /_(_) __/_  __
+ / ___/ _ \/ / / / _ \/ ___/ __/ / /_/ / / /
+/ /__/  __/ /_/ /  __/ /__/ /_/ / __/ /_/ / 
+\___/\___/\__, /\___/\___/\__/_/_/  \__, /  
+         /____/                    /____/   uninstallation wizard
 "
-Write-Host "Welcome to the ceyectify uninstallation wizard"
 Write-Host ""
 Write-Host ""
-Write-Host ""
+
 $uninstall = Read-Host "Proceed with the uninstallation? [Y/n]"
 
 if ($uninstall -ine "n") {
