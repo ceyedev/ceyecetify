@@ -21,23 +21,20 @@ Write-Host ""
 $autoupdate = Read-Host "Automatically use the latest version? [Y/n]"
 $chosenversion = ""
 
-if ($autoupdate -eq "n" -or $autoupdate -eq "N") {
-    if (Test-Path ".\ceyecetify_with_updates.js") {
-        Write-Host "Remove 'ceyecetify_with_updates.js'..."
-        Remove-Item ".\ceyecetify_with_updates.js"
-        spicetify config extensions ceyecetify_with_updates.js-
+foreach ($file in @("ceyecetify_with_updates.js", "ceyecetify_without_updates.js")) {
+    if (Test-Path ".\$file") {
+        Write-Host "Remove '$file'..."
+        Remove-Item ".\$file"
+        spicetify config extensions "$file-"
     }
+}
 
+if ($autoupdate -eq "n" -or $autoupdate -eq "N") {
     Write-Host "Installing without automatic updates..."
     curl.exe -L "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/ceyecetify_without_updates.js" -o ".\ceyecetify_without_updates.js"
     $chosenversion = "ceyecetify_without_updates.js"
 }
 else {
-    if (Test-Path ".\ceyecetify_without_updates.js") {
-        Write-Host "Remove 'ceyecetify_without_updates.js'..."
-        Remove-Item ".\ceyecetify_without_updates.js"
-        spicetify config extensions ceyecetify_without_updates.js-
-    }
     Write-Host "Installing with automatic updates..."
     curl.exe -L "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/ceyecetify_with_updates.js" -o ".\ceyecetify_with_updates.js"
     $chosenversion = "ceyecetify_with_updates.js"
