@@ -18,11 +18,22 @@ $autoupdate = Read-Host "Automatically use the latest version? [Y/n]"
 $chosenversion = ""
 
 if ($autoupdate -eq "n" -or $autoupdate -eq "N") {
+    if (Test-Path ".\ceyectify_with_updates.js") {
+        Write-Host "Remove 'ceyectify_with_updates.js'..."
+        Remove-Item ".\ceyectify_with_updates.js"
+        spicetify config extensions ceyectify_with_updates.js-
+    }
+
     Write-Host "Installing without automatic updates..."
     curl.exe -L "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/ceyectify_without_updates.js" -o ".\ceyectify_without_updates.js"
     $chosenversion = "ceyectify_without_updates.js"
 }
 else {
+    if (Test-Path ".\ceyectify_without_updates.js") {
+        Write-Host "Remove 'ceyectify_without_updates.js'..."
+        Remove-Item ".\ceyectify_without_updates.js"
+        spicetify config extensions ceyectify_without_updates.js-
+    }
     Write-Host "Installing with automatic updates..."
     curl.exe -L "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/ceyectify_with_updates.js" -o ".\ceyectify_with_updates.js"
     $chosenversion = "ceyectify_with_updates.js"
