@@ -1,4 +1,3 @@
-powershell.exe
 Set-Location "$env:APPDATA/spicetify/Extensions"
 
 Clear-Host
