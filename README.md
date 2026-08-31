@@ -36,7 +36,7 @@ If you decide you don't want to use "ceyecetify" anymore, you can remove it like
 4. Run `spicetify apply`
 
 #### On Windows:
-1. Navigate to `AppData/Roaming/spicetify/Extensions` (powershell command: `cd "$env:APPDATA/spicetify/Extensions`)
-2. Run `spicetify config extensions ceyectify_with_updates.js-` or `spicetify config extensions ceyectify_without_updates.js-`, depending on which version you installed
-3. Delete the file
-4. Run `spicetify apply`
+Open PowerShell and run
+```
+powershell -Command "irm 'https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/uninstall.ps1' | iex"
+```
