@@ -468,7 +468,7 @@
       var el = document.createElement('style');
       el.id = `ceyecetify`;
       el.textContent = (String.raw`
-  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-33041-3H24KAvheRy9/1a0588d0fbb0/style.css */
+  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-53045-YGFoRxqX9Wjp/1a059f662e9b/style.css */
 :root {
   --empty: #00000000;
   --almost-empty: #00000040;
@@ -1102,6 +1102,10 @@ button[data-testid=cover-art-button] {
 }
 .QbBd77Gr02YOoZzr {
   background-color: #00000000 !important;
+}
+.main-connectBar-connected {
+  justify-content: center !important;
+  margin: 0 20px 10px 20px;
 }
 
       `).trim();
