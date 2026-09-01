@@ -190,7 +190,7 @@ async function updateAmbienceColor() {
 
 		const root = document.documentElement;
 
-		root.style.setProperty("--current-ambience-color", currentColor);
+		root.style.setProperty("--current-ambience-color", modifyHSV(currentColor, 0, 0, 0));
 		root.style.setProperty("--current-ambience-color-dark", darkColor);
 		root.style.setProperty("--current-ambience-color-transparent", transparentColor);
 
@@ -202,10 +202,13 @@ async function updateAmbienceColor() {
 		const darkCBG = `color-mix(in srgb, ${currentColor} 10%, black)`;
 		const lightBG = `color-mix(in srgb, ${currentColor} 10%, transparent)`;
 
-		root.style.setProperty("--background-color-dark", mixColors(currentColor, "#000000", 0.3));
+		/*root.style.setProperty("--background-color-dark", mixColors(currentColor, "#000000", 0.3));
         root.style.setProperty("--background-color-default", currentColor);
-        root.style.setProperty("--background-color-highlight", mixColors(currentColor, "#ffffff", 0.3));
+        root.style.setProperty("--background-color-highlight", mixColors(currentColor, "#ffffff", 0.3));*/
 
+        root.style.setProperty("--background-color-dark", modifyHSV(currentColor, 20, -0.2, 0.2));
+        root.style.setProperty("--background-color-default", modifyHSV(currentColor, 0, 0, 0));
+        root.style.setProperty("--background-color-highlight", modifyHSV(currentColor, -20, 0.2, 0.2));
 
 		refreshDynamicBackground();
 	} catch (error) {
@@ -219,8 +222,13 @@ setTimeout(() => {
 
 
 
+let isPlaying = Spicetify.Player.isPlaying();
+function togglePlaying() {
+    isPlaying = !isPlaying;
+}
 
 Spicetify.Player.addEventListener("songchange", updateAmbienceColor);
+Spicetify.Player.addEventListener("onplaypause", togglePlaying)
 
 
 
@@ -314,8 +322,8 @@ function modifyHSV(hex, h = 0, s = 0, v = 0) {
     hsv.h = (hsv.h + h) % 360;
     if (hsv.h < 0) hsv.h += 360;
 
-    hsv.s = Math.max(0, Math.min(1, hsv.s + s));
-    hsv.v = Math.max(0, Math.min(1, hsv.v + v));
+    hsv.s = Math.max(0, Math.min(0.7, hsv.s + s));
+    hsv.v = Math.max(0, Math.min(0.8, hsv.v + v));
 
     return hsvToHex(hsv.h, hsv.s, hsv.v);
 }
@@ -627,7 +635,7 @@ if (container) {
     }
 
     function draw() {
-        time += CONFIG.animationSpeed;
+        time += isPlaying ? CONFIG.animationSpeed : 0;
 
         updateColors();
 

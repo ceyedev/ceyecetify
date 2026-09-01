@@ -132,7 +132,7 @@
       const darkColor = `color-mix(in srgb, ${currentColor} 70%, black)`;
       const transparentColor = `color-mix(in srgb, ${currentColor} 30%, transparent)`;
       const root = document.documentElement;
-      root.style.setProperty("--current-ambience-color", currentColor);
+      root.style.setProperty("--current-ambience-color", modifyHSV(currentColor, 0, 0, 0));
       root.style.setProperty("--current-ambience-color-dark", darkColor);
       root.style.setProperty("--current-ambience-color-transparent", transparentColor);
       console.log("[Ambience] CSS variables updated");
@@ -141,9 +141,9 @@
       console.log("[Ambience] --current-ambience-color-transparent:", transparentColor);
       const darkCBG = `color-mix(in srgb, ${currentColor} 10%, black)`;
       const lightBG = `color-mix(in srgb, ${currentColor} 10%, transparent)`;
-      root.style.setProperty("--background-color-dark", mixColors(currentColor, "#000000", 0.3));
-      root.style.setProperty("--background-color-default", currentColor);
-      root.style.setProperty("--background-color-highlight", mixColors(currentColor, "#ffffff", 0.3));
+      root.style.setProperty("--background-color-dark", modifyHSV(currentColor, 20, -0.2, 0.2));
+      root.style.setProperty("--background-color-default", modifyHSV(currentColor, 0, 0, 0));
+      root.style.setProperty("--background-color-highlight", modifyHSV(currentColor, -20, 0.2, 0.2));
       refreshDynamicBackground();
     } catch (error) {
       console.error("[Ambience] Color extraction failed:", error);
@@ -152,24 +152,68 @@
   setTimeout(() => {
     updateAmbienceColor();
   }, 1e3);
+  var isPlaying = Spicetify.Player.isPlaying();
+  function togglePlaying() {
+    isPlaying = !isPlaying;
+  }
   Spicetify.Player.addEventListener("songchange", updateAmbienceColor);
-  function mixColors(color1, color2, amount = 0.5) {
-    const hexToRGB = (hex) => {
-      hex = hex.replace("#", "");
-      return {
-        r: parseInt(hex.slice(0, 2), 16),
-        g: parseInt(hex.slice(2, 4), 16),
-        b: parseInt(hex.slice(4, 6), 16)
-      };
-    };
-    const rgbToHex = ({ r, g, b: b2 }) => `#${[r, g, b2].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("")}`;
-    const a = hexToRGB(color1);
-    const b = hexToRGB(color2);
-    return rgbToHex({
-      r: a.r + (b.r - a.r) * amount,
-      g: a.g + (b.g - a.g) * amount,
-      b: a.b + (b.b - a.b) * amount
-    });
+  Spicetify.Player.addEventListener("onplaypause", togglePlaying);
+  function hexToHSV(hex) {
+    hex = hex.replace("#", "");
+    const r = parseInt(hex.slice(0, 2), 16) / 255;
+    const g = parseInt(hex.slice(2, 4), 16) / 255;
+    const b = parseInt(hex.slice(4, 6), 16) / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const d = max - min;
+    let h = 0;
+    if (d !== 0) {
+      if (max === r)
+        h = (g - b) / d % 6;
+      else if (max === g)
+        h = (b - r) / d + 2;
+      else
+        h = (r - g) / d + 4;
+      h *= 60;
+      if (h < 0)
+        h += 360;
+    }
+    const s = max === 0 ? 0 : d / max;
+    const v = max;
+    return { h, s, v };
+  }
+  function hsvToHex(h, s, v) {
+    s = Math.max(0, Math.min(1, s));
+    v = Math.max(0, Math.min(1, v));
+    const c = v * s;
+    const x = c * (1 - Math.abs(h / 60 % 2 - 1));
+    const m = v - c;
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    if (h < 60)
+      [r, g, b] = [c, x, 0];
+    else if (h < 120)
+      [r, g, b] = [x, c, 0];
+    else if (h < 180)
+      [r, g, b] = [0, c, x];
+    else if (h < 240)
+      [r, g, b] = [0, x, c];
+    else if (h < 300)
+      [r, g, b] = [x, 0, c];
+    else
+      [r, g, b] = [c, 0, x];
+    const toHex = (value) => Math.round((value + m) * 255).toString(16).padStart(2, "0");
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+  function modifyHSV(hex, h = 0, s = 0, v = 0) {
+    const hsv = hexToHSV(hex);
+    hsv.h = (hsv.h + h) % 360;
+    if (hsv.h < 0)
+      hsv.h += 360;
+    hsv.s = Math.max(0, Math.min(0.7, hsv.s + s));
+    hsv.v = Math.max(0, Math.min(0.8, hsv.v + v));
+    return hsvToHex(hsv.h, hsv.s, hsv.v);
   }
   var PARENT_SELECTOR = ".Root__top-container";
   var CONFIG = {
@@ -330,7 +374,7 @@
         CONFIG.colorTransitionSpeed
       );
     }, draw = function() {
-      time += CONFIG.animationSpeed;
+      time += isPlaying ? CONFIG.animationSpeed : 0;
       updateColors();
       const w = noiseCanvas.width;
       const h = noiseCanvas.height;
@@ -468,7 +512,7 @@
       var el = document.createElement('style');
       el.id = `ceyecetify`;
       el.textContent = (String.raw`
-  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-53045-YGFoRxqX9Wjp/1a059f662e9b/style.css */
+  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-31394-1wO85HsdjHrq/1a05dd738952a/style.css */
 :root {
   --empty: #00000000;
   --almost-empty: #00000040;
@@ -494,6 +538,31 @@
 .main-nowPlayingView-mainContainer {
   display: default !important;
 }
+#global-nav-bar {
+  height: 60px !important;
+  padding: 0 !important;
+}
+#global-nav-bar .spicetify-sc-scroller {
+  width: 60px !important;
+  height: 60px !important;
+  padding-left: 5px;
+}
+#global-nav-bar [aria-label=Marketplace],
+#global-nav-bar [aria-label=Home],
+#global-nav-bar button:has(.main-avatar-image) {
+  background-color: var(--almost-empty) !important;
+  width: 50px !important;
+  height: 50px !important;
+  border: solid 3px rgba(255, 255, 255, 0.5);
+  margin-bottom: 0px;
+  transition: all 0.3s ease;
+}
+#global-nav-bar [aria-label=Marketplace]:hover,
+#global-nav-bar [aria-label=Home]:hover,
+#global-nav-bar button:has(.main-avatar-image):hover {
+  border: solid 3px white;
+  transform: scale(1.1) !important;
+}
 .main-actionButtons-spacer.main-actionButtons {
   display: none !important;
 }
@@ -503,6 +572,12 @@
 .main-topBar-searchBar {
   background-color: var(--almost-empty) !important;
   border: solid 3px rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease !important;
+  transform: scale(1);
+}
+.main-globalNav-searchInputSection:hover .main-topBar-searchBar {
+  border: solid 3px rgba(255, 255, 255, 0.75);
+  transform: scale(1.01);
 }
 .main-globalNav-searchInputTextWrapper > :nth-child(2) {
   display: none;
@@ -526,7 +601,7 @@
   display: none !important;
 }
 .main-yourLibraryX-libraryRootlist {
-  padding: 5px !important;
+  padding: 4px !important;
 }
 #Desktop_LeftSidebar_Id {
   width: 72px !important;
@@ -613,13 +688,16 @@
 }
 .main-cardImage-imageWrapper {
   border-radius: var(--big-card-radius);
-  transition: all 0.2s ease;
+  transition: all 1s ease;
   background-color: var(--current-ambience-color-dark) !important;
 }
 .main-cardImage-imageWrapper .main-image-image {
   border-radius: var(--big-card-radius);
   transition: all 0.2s ease;
   transform: scale(0.95);
+}
+.main-cardImage-imageWrapper {
+  box-shadow: 0 0 8px 4px rgba(0, 0, 0, 0.15) !important;
 }
 .main-card-cardContainer [data-encore-id=cardTitle] {
   width: 100% !important;
@@ -699,11 +777,22 @@
 .ACvNigTgdo1hsCnz {
   display: none !important;
 }
+.tsCJQaqF4ALEqTft .main-actionBar-ActionBarRow [aria-haspopup=menu] {
+  display: none !important;
+}
 .main-actionBar-ActionBarContainer .main-shelf-shelf.Shelf {
   padding-bottom: 10px !important;
 }
 .main-actionBar-ActionBarContainer .main-shelf-shelf.Shelf .e-10810-legacy-list-row__header {
   justify-content: center;
+}
+[aria-label=Discography] > :nth-child(2) > div {
+  justify-content: center;
+}
+.tsCJQaqF4ALEqTft .main-gridContainer-gridContainerMargin > :nth-child(1) {
+  width: 100% !important;
+  position: relative;
+  grid-column: 1 / -1;
 }
 .artist-artistDiscography-topBar {
   background-color: var(--empty) !important;
@@ -757,11 +846,12 @@
 }
 .main-trackList-trackListHeader.Ltz8hFoxXpck1XAk {
   background-color: var(--current-ambience-color-dark) !important;
+  box-shadow: none !important;
 }
 .main-trackList-trackListRow.main-trackList-trackListRowGrid {
   background-color: var(--empty) !important;
   transform: scale(0.975);
-  transition: all 0.1s ease;
+  transition: all 0.2s ease;
   border: solid 1px;
   border-color: var(--empty);
 }
@@ -769,6 +859,10 @@
   background-color: var(--current-ambience-color) !important;
   transform: scale(1);
   border-color: white;
+  transition:
+    all 0.5s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 .Root__top-container {
   background-color: var(--empty);
@@ -813,6 +907,19 @@
 .main-home-filterChipsContainer .search-searchCategory-contentArea {
   margin: auto !important;
 }
+.search-searchCategory-carouselButton {
+  background-color: var(--almost-empty) !important;
+  border: solid 2px rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease !important;
+}
+.search-searchCategory-carouselButton:hover {
+  border: solid 2px white;
+  transform: scale(1.25) !important;
+}
+.search-searchCategory-carouselButton:active {
+  border: solid 2px rgba(255, 255, 255, 0.75);
+  transform: scale(1.1) !important;
+}
 section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
   display: none;
 }
@@ -828,6 +935,15 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
 .main-home-content .search-searchCategory-contentArea::after,
 .search-searchCategory-contentArea::before {
   background-image: none !important;
+}
+.main-home-content [data-shelf=carousel] .e-10810-legacy-list-row__header-side img {
+  display: none !important;
+}
+.search-searchCategory-categoryGrid [data-carousel-item=true]:has([aria-label="Music \2014  Following"]) {
+  display: none !important;
+}
+.main-home-content .C8qLX8lOHwAx63FPbKWw7XkMnYJ6al1a {
+  display: none !important;
 }
 .main-playlistEditDetailsModal-container,
 .main-trackCreditsModalV2-container,
@@ -861,14 +977,15 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
   border-radius: 8px;
 }
 .Root__right-sidebar {
-  height: 120px;
+  min-height: 0px;
+  max-height: 65px;
   transition: all 0.3s ease;
 }
 :has(#Desktop_PanelContainer_Id[aria-label="Queue"]) .Root__right-sidebar {
-  height: 100% !important;
+  max-height: calc(100% - 8px) !important;
 }
 :has(#Desktop_PanelContainer_Id[aria-label="Connect to a device"]) .Root__right-sidebar {
-  height: 100% !important;
+  max-height: calc(100% - 8px) !important;
 }
 #Desktop_PanelContainer_Id[aria-label="Now playing view"] .main-nowPlayingView-mainContainer {
   display: none;
@@ -900,13 +1017,100 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
 }
 [aria-label="Now playing view"] .main-nowPlayingView-headerTextWrapper h1 {
   font-size: 25px !important;
+  transition: all 0.3s ease;
+}
+.main-nowPlayingView-container:has(:is([aria-label="Connect to a device"], [aria-label="Queue"])) [aria-label="Now playing view"] .main-nowPlayingView-headerTextWrapper h1 {
+  opacity: 0;
+}
+[aria-label="Connect to a device"] .main-nowPlayingView-headerTextWrapper h1 {
+  font-size: 22px;
+}
+[aria-label="Connect to a device"] .main-nowPlayingView-headerTextWrapper {
+  justify-items: center !important;
+}
+[aria-label="Connect to a device"] a:is([href="https://support.spotify.com/article/spotify-connect/"], [href="https://www.spotify.com/connect?utm_campaign=connect&utm_medium=app&utm_source=desktop"]) {
+  display: none !important;
+}
+[aria-label="Connect to a device"] .os-scrollbar {
+  display: none !important;
+}
+.main-nowPlayingView-headerContainer {
+  box-shadow: none !important;
+}
+[aria-label="Connect to a device"] [aria-label="Current device"] {
+  background-color: var(--almost-empty) !important;
+  border: solid 3px rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  transition: all 0.2s ease;
+  transform: scale(0.9);
+}
+[aria-label="Connect to a device"] [aria-label="Current device"]:hover {
+  background-color: var(--current-ambience-color) !important;
+  border: solid 3px white;
+  transform: scale(1);
+}
+[aria-label="Connect to a device"] [aria-label="Current device"]:hover > :nth-child(1) {
+  background-color: transparent !important;
+}
+.Root__right-sidebar::before {
+  border-radius: 8px;
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background-image: linear-gradient(to top, #00000040 0%, #00000020 25%, transparent 100%);
+  transition: all 0.3s ease;
+}
+.Root__right-sidebar:has(:is([aria-label="Connect to a device"], [aria-label="Queue"]))::before {
+  opacity: 1;
+}
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div::after,
+[aria-label=Queue] [aria-label="Recently played"] li > div::after {
+  inset: 0;
+  width: auto !important;
+  height: auto !important;
+  background-color: var(--empty) !important;
+  transition: all 0.2s ease;
+  border: solid 1px transparent;
+  transform: scale(0.9);
+}
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div:hover::after,
+[aria-label=Queue] [aria-label="Recently played"] li > div:hover::after {
+  background-color: var(--current-ambience-color) !important;
+  border-color: white;
+  transform: scale(1);
+}
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div,
+[aria-label=Queue] [aria-label="Recently played"] li > div {
+  transition: all 0.2s ease;
+  transform: scale(0.9);
+}
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div:hover,
+[aria-label=Queue] [aria-label="Recently played"] li > div:hover {
+  transform: scale(1);
+}
+[aria-label=Queue] button[aria-haspopup=menu] {
+  display: none;
+}
+#queue-panel h2 {
+  font-size: 20px;
+}
+#queue-panel .vdNj5Kuby0wJApMc {
+  justify-content: center !important;
+}
+[aria-label=Queue] .main-nowPlayingView-headerWrapper {
+  justify-content: center !important;
+}
+[aria-label=Queue] .main-nowPlayingView-headerWrapper button {
+  background-color: var(--empty) !important;
+  font-size: 20px;
 }
 .Root__now-playing-bar {
   margin: 0 4px 4px 4px;
   border-radius: 8px;
-  background-image: linear-gradient(to bottom, #00000055 0%, #00000055 50%, transparent 100%);
+  background-image: linear-gradient(to bottom, #00000040 0%, #00000040 50%, transparent 100%);
   background-color: #00000000;
-  transition: all 500ms ease;
+  transition: all 0.5s ease;
 }
 .Root__right-sidebar,
 #Desktop_LeftSidebar_Id,
@@ -996,7 +1200,8 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
   height: 100% !important;
   border-radius: 8px;
 }
-.main-nowPlayingWidget-actionButtonWrapper [aria-label="Hide in this album"] {
+.main-nowPlayingWidget-actionButtonWrapper [aria-label="Hide in this album"],
+.main-nowPlayingWidget-actionButtonWrapper [aria-label="Hide in this playlist"] {
   display: none;
 }
 .main-nowPlayingWidget-trackInfo.main-trackInfo-container * {
