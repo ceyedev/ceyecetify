@@ -3,6 +3,26 @@
           await new Promise(resolve => setTimeout(resolve, 10));
         }
         var ceyecetify = (() => {
+  var __defProp = Object.defineProperty;
+  var __defProps = Object.defineProperties;
+  var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
+  var __getOwnPropSymbols = Object.getOwnPropertySymbols;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __propIsEnum = Object.prototype.propertyIsEnumerable;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+  var __spreadValues = (a, b) => {
+    for (var prop in b || (b = {}))
+      if (__hasOwnProp.call(b, prop))
+        __defNormalProp(a, prop, b[prop]);
+    if (__getOwnPropSymbols)
+      for (var prop of __getOwnPropSymbols(b)) {
+        if (__propIsEnum.call(b, prop))
+          __defNormalProp(a, prop, b[prop]);
+      }
+    return a;
+  };
+  var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
+
   // src/app.js
   async function main() {
     while (!(Spicetify == null ? void 0 : Spicetify.showNotification)) {
@@ -11,6 +31,49 @@
     Spicetify.showNotification("ceyecetify loaded!");
   }
   var app_default = main;
+  (() => {
+    const lock = () => {
+      const container2 = document.querySelector(".Root__top-container");
+      if (!container2 || container2.__scrollLocked) {
+        return;
+      }
+      container2.__scrollLocked = true;
+      const scrollTo = container2.scrollTo.bind(container2);
+      const scrollBy = container2.scrollBy.bind(container2);
+      container2.scrollTo = (...args) => {
+        if (typeof args[0] === "object") {
+          return scrollTo(__spreadProps(__spreadValues({}, args[0]), {
+            left: 0,
+            top: 0
+          }));
+        }
+        return scrollTo(0, 0);
+      };
+      container2.scrollBy = () => {
+      };
+      container2.addEventListener("scroll", () => {
+        if (container2.scrollLeft !== 0 || container2.scrollTop !== 0) {
+          container2.scrollLeft = 0;
+          container2.scrollTop = 0;
+        }
+      }, { passive: true });
+      container2.scrollLeft = 0;
+      container2.scrollTop = 0;
+    };
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function(options) {
+      var _a;
+      if ((_a = this.closest) == null ? void 0 : _a.call(this, ".Root__top-container")) {
+        return;
+      }
+      return originalScrollIntoView.call(this, options);
+    };
+    lock();
+    new MutationObserver(lock).observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+  })();
   var observer = new MutationObserver(() => {
     const viewport = document.querySelector(
       "#main-view .main-view-container__scroll-node [data-overlayscrollbars-viewport]"
@@ -145,6 +208,7 @@
       root.style.setProperty("--background-color-default", modifyHSV(currentColor, 0, 0, 0));
       root.style.setProperty("--background-color-highlight", modifyHSV(currentColor, -20, 0.2, 0.2));
       refreshDynamicBackground();
+      setHighQualityCover();
     } catch (error) {
       console.error("[Ambience] Color extraction failed:", error);
     }
@@ -158,6 +222,12 @@
   }
   Spicetify.Player.addEventListener("songchange", updateAmbienceColor);
   Spicetify.Player.addEventListener("onplaypause", togglePlaying);
+  function setHighQualityCover() {
+    const img = document.querySelector(".main-nowPlayingWidget-nowPlaying .cover-art img");
+    if (img) {
+      img.src = Spicetify.Player.data.item.metadata.image_xlarge_url;
+    }
+  }
   function hexToHSV(hex) {
     hex = hex.replace("#", "");
     const r = parseInt(hex.slice(0, 2), 16) / 255;
@@ -512,7 +582,7 @@
       var el = document.createElement('style');
       el.id = `ceyecetify`;
       el.textContent = (String.raw`
-  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-31394-1wO85HsdjHrq/1a05dd738952a/style.css */
+  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-34396-uNMnpZ5WFgHI/1a0647520de16/style.css */
 :root {
   --empty: #00000000;
   --almost-empty: #00000040;
@@ -942,7 +1012,7 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
 .search-searchCategory-categoryGrid [data-carousel-item=true]:has([aria-label="Music \2014  Following"]) {
   display: none !important;
 }
-.main-home-content .C8qLX8lOHwAx63FPbKWw7XkMnYJ6al1a {
+.main-home-content .C8qLX8lOHwAx63FP.bKWw7XkMnYJ6al1a {
   display: none !important;
 }
 .main-playlistEditDetailsModal-container,
@@ -1064,6 +1134,9 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
 .Root__right-sidebar:has(:is([aria-label="Connect to a device"], [aria-label="Queue"]))::before {
   opacity: 1;
 }
+.wskqaMF_9vIdCfEN.qniLkpbkE7Y8nGFS {
+  display: none;
+}
 [aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div::after,
 [aria-label=Queue] [aria-label="Recently played"] li > div::after {
   inset: 0;
@@ -1096,7 +1169,7 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
   font-size: 20px;
 }
 #queue-panel .vdNj5Kuby0wJApMc {
-  justify-content: center !important;
+  justify-content: left !important;
 }
 [aria-label=Queue] .main-nowPlayingView-headerWrapper {
   justify-content: center !important;
@@ -1307,6 +1380,10 @@ button[data-testid=cover-art-button] {
 }
 .QbBd77Gr02YOoZzr {
   background-color: #00000000 !important;
+}
+.Root__top-container {
+  overflow-x: clip !important;
+  overflow-y: hidden !important;
 }
 .main-connectBar-connected {
   justify-content: center !important;

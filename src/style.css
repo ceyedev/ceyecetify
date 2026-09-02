@@ -278,7 +278,7 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {display: none;
 .main-home-content .search-searchCategory-contentArea::after, .search-searchCategory-contentArea::before {background-image: none !important;}
 .main-home-content [data-shelf="carousel"] .e-10810-legacy-list-row__header-side img {display: none !important;}
 .search-searchCategory-categoryGrid [data-carousel-item="true"]:has([aria-label="Music — Following"]) {display: none !important;}
-.main-home-content .C8qLX8lOHwAx63FPbKWw7XkMnYJ6al1a {display: none !important;}
+.main-home-content .C8qLX8lOHwAx63FP.bKWw7XkMnYJ6al1a {display: none !important;}
 /*#endregion*/
 
 
@@ -417,7 +417,8 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {display: none;
 }
 
 
-
+/* annoying privacy warning*/
+.wskqaMF_9vIdCfEN.qniLkpbkE7Y8nGFS {display: none;}
 
 
 
@@ -439,7 +440,7 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {display: none;
 [aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div:hover, [aria-label="Queue"] [aria-label="Recently played"] li > div:hover {transform: scale(1);}
 [aria-label="Queue"] button[aria-haspopup="menu"] {display: none;}
 #queue-panel h2 {font-size: 20px;}
-#queue-panel .vdNj5Kuby0wJApMc {justify-content: center !important;}
+#queue-panel .vdNj5Kuby0wJApMc {justify-content: left !important;}
 
 
 
@@ -842,13 +843,9 @@ background-color: #00000000 !important;
     top: 0;
     bottom: 10px;
 }*/
-
-
-
-
-
-
-
-
+.Root__top-container {
+    overflow-x: clip !important;
+    overflow-y: hidden !important;
+}
 
 .main-connectBar-connected {justify-content: center !important; margin: 0 20px 10px 20px;}

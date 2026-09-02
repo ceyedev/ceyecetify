@@ -11,7 +11,62 @@ async function main() {
 export default main;
 
 
+/* Prevent scrolling when in queue */
+(() => {
+    const lock = () => {
+        const container = document.querySelector('.Root__top-container');
 
+        if (!container || container.__scrollLocked) {
+            return;
+        }
+
+        container.__scrollLocked = true;
+
+        const scrollTo = container.scrollTo.bind(container);
+        const scrollBy = container.scrollBy.bind(container);
+
+        container.scrollTo = (...args) => {
+            if (typeof args[0] === 'object') {
+                return scrollTo({
+                    ...args[0],
+                    left: 0,
+                    top: 0
+                });
+            }
+
+            return scrollTo(0, 0);
+        };
+
+        container.scrollBy = () => {};
+
+        container.addEventListener('scroll', () => {
+            if (container.scrollLeft !== 0 || container.scrollTop !== 0) {
+                container.scrollLeft = 0;
+                container.scrollTop = 0;
+            }
+        }, { passive: true });
+
+        container.scrollLeft = 0;
+        container.scrollTop = 0;
+    };
+
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+
+    Element.prototype.scrollIntoView = function(options) {
+        if (this.closest?.('.Root__top-container')) {
+            return;
+        }
+
+        return originalScrollIntoView.call(this, options);
+    };
+
+    lock();
+
+    new MutationObserver(lock).observe(document.documentElement, {
+        childList: true,
+        subtree: true
+    });
+})();
 
 
 
@@ -211,6 +266,7 @@ async function updateAmbienceColor() {
         root.style.setProperty("--background-color-highlight", modifyHSV(currentColor, -20, 0.2, 0.2));
 
 		refreshDynamicBackground();
+        setHighQualityCover();
 	} catch (error) {
 		console.error("[Ambience] Color extraction failed:", error);
 	}
@@ -230,6 +286,13 @@ function togglePlaying() {
 Spicetify.Player.addEventListener("songchange", updateAmbienceColor);
 Spicetify.Player.addEventListener("onplaypause", togglePlaying)
 
+function setHighQualityCover() {
+    const img = document.querySelector('.main-nowPlayingWidget-nowPlaying .cover-art img');
+
+    if (img) {
+        img.src = Spicetify.Player.data.item.metadata.image_xlarge_url;
+    }
+}
 
 
 

@@ -1,6 +1,6 @@
 # ceyecetify - /ˈsaɪ stiːfaɪ/
 This is a WIP version of my custom Spicetify theme. You'll get a dynamic color palette based on your current song, a simplified design, and lots more!
-❗IMPORTANT: currently works best on Mac, but Windows and Linux will be supported soon!
+❗IMPORTANT: Your language needs to be set to "English (English)" to work properly! To change your language, click on your profile picture -> settings -> language
 
 ## Before Installing
 * Install the `ceyecetify_without_updates.js` if you want to use the current version
