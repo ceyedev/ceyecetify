@@ -161,7 +161,7 @@
 .aotfMYhXr8Ag8I7a .contentSpacing div:has(.jqeC8Fv3eQXI3cmc) {display: none !important;}
 .ACvNigTgdo1hsCnz {display: none !important;}
 .tsCJQaqF4ALEqTft .main-actionBar-ActionBarRow [aria-haspopup="menu"] {display: none !important;}
-.tsCJQaqF4ALEqTft .artist-artistDiscography-headerContainer.artist-artistDiscography-firstAlbum {background-color: none !important;}
+.artist-artistDiscography-headerContainer {background-color: var(--empty) !important; margin-bottom: 0;}
 
 /*Reduce Padding, center headlines*/
 .main-actionBar-ActionBarContainer .main-shelf-shelf.Shelf {padding-bottom: 10px !important;}

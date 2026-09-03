@@ -582,7 +582,7 @@
       var el = document.createElement('style');
       el.id = `ceyecetify`;
       el.textContent = (String.raw`
-  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-1138-QDjdPWFNbXg2/1a0669342d92/style.css */
+  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-1138-QDjdPWFNbXg2/1a0669c90a53/style.css */
 :root {
   --empty: #00000000;
   --almost-empty: #00000040;
@@ -850,8 +850,9 @@
 .tsCJQaqF4ALEqTft .main-actionBar-ActionBarRow [aria-haspopup=menu] {
   display: none !important;
 }
-.tsCJQaqF4ALEqTft .artist-artistDiscography-headerContainer.artist-artistDiscography-firstAlbum {
-  background-color: none !important;
+.artist-artistDiscography-headerContainer {
+  background-color: var(--empty) !important;
+  margin-bottom: 0;
 }
 .main-actionBar-ActionBarContainer .main-shelf-shelf.Shelf {
   padding-bottom: 10px !important;
