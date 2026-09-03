@@ -18,9 +18,16 @@ curl -fsSL "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main
 powershell -Command "irm 'https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/.install/win/install.ps1' | iex"
 ```
 
+## Enhance Your Experience
+
+To get the most out of this theme, I recommend installing the following extensions from the Spicetify Marketplace:
+
+* **Lucid Lyrics** ([GitLab](https://gitlab.com/sanoojes/lucid-lyrics))
+* **Adblockify** ([GitHub](https://github.com/rxri/spicetify-extensions/tree/main/adblock))
+
 &nbsp;
 
-### Uninstall ceyecetify
+## Uninstall ceyecetify
 #### On Mac/Linux:
 ```
 curl -fsSL "https://raw.githubusercontent.com/ceyedev/ceyecetify/refs/heads/main/.install/unix/uninstall.sh" | bash

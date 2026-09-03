@@ -483,17 +483,28 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {display: none;
 
 
 
+/*Lucid lyrics*/
+body:not(:has(.fullscreen-content)) .lucid-background {
+  display: none !important;
+}
+
+body:not(:has(.fullscreen-content)) #lucid-page {
+  background-image: linear-gradient(var(--empty) 0%, var(--almost-empty) 25%, var(--almost-empty) 75%, var(--empty) 100%);
+}
+
+.tippy-trigger:has(.lucide-maximize){
+  display: none !important;
+}
 
 
+.player-widget__image-wrapper .player-widget__like-btn, .player-widget__image-wrapper .player-widget__controls, .player-widget__top-controls {
+  display: none !important;
+}
 
-
-
-
-
-
-
-
-
+.widget-area:hover .player-widget__image-wrapper img{
+  filter: blur(0px) !important;
+}
+.player-widget__info {opacity: 1 !important;}
 
 
 
@@ -507,6 +518,32 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {display: none;
 
 
 /*#region*/ /*Temp_Layout_And_Order*/
+
+[data-testid="progress-bar-handle"] {
+  display: block !important;
+  opacity: 0;
+  height: 2px;
+  width: 2px;
+  transition: opacity 0.3s ease, height 0.3s ease, width 0.3s ease !important;
+}
+:has([data-testid="progress-label"]) [data-testid="progress-bar-handle"] {
+  opacity: 1;
+  height: 12px;
+  width: 12px;
+}
+.x-progressBar-fillColor {
+  transition: background-color 0.3s ease !important;
+}
+
+.x-progressBar-progressFillColor {
+  display: block !important;
+  opacity: 0;
+  transition: opacity 0.75s ease !important;
+}
+:has([data-testid="progress-label"]) .x-progressBar-progressFillColor {
+  opacity: 1;
+}
+
 
 
 .Root__now-playing-bar{
