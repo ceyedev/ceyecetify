@@ -154,13 +154,14 @@
 
 /*#region*/ /*Artist Page*/
 
-/*Hide Verified, Show More, Artist Pick, On Tour, Merch, "..." on top*/
+/*Hide Verified, Show More, Artist Pick, On Tour, Merch, "..." on top, on win BG col of discovery*/
 [aria-label="Verified by Spotify"] {display: none !important;}
 .main-actionBar-ActionBarContainer .main-shelf-shelf.Shelf .e-10810-legacy-list-row__header div:has(.encore-text-body-small-bold) {display: none !important;}
 .B9ji6YIpLSUHiyxx {display: none !important;}
 .aotfMYhXr8Ag8I7a .contentSpacing div:has(.jqeC8Fv3eQXI3cmc) {display: none !important;}
 .ACvNigTgdo1hsCnz {display: none !important;}
 .tsCJQaqF4ALEqTft .main-actionBar-ActionBarRow [aria-haspopup="menu"] {display: none !important;}
+.tsCJQaqF4ALEqTft .artist-artistDiscography-headerContainer.artist-artistDiscography-firstAlbum {background-color: none !important;}
 
 /*Reduce Padding, center headlines*/
 .main-actionBar-ActionBarContainer .main-shelf-shelf.Shelf {padding-bottom: 10px !important;}
@@ -771,6 +772,7 @@ button[data-testid="cover-art-button"] {
   width: 220px !important;
   margin: auto;
   display: contents;
+  pointer-events: none;
 }
 
 

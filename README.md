@@ -22,7 +22,7 @@ powershell -Command "irm 'https://raw.githubusercontent.com/ceyedev/ceyecetify/r
 
 To get the most out of this theme, I recommend installing the following extensions from the Spicetify Marketplace:
 
-* **Lucid Lyrics** ([GitLab](https://gitlab.com/sanoojes/lucid-lyrics))
+* **Lucid Lyrics** ([GitHub](https://github.com/sanoojes/lucid-lyrics))
 * **Adblockify** ([GitHub](https://github.com/rxri/spicetify-extensions/tree/main/adblock))
 
 &nbsp;

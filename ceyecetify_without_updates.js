@@ -582,7 +582,7 @@
       var el = document.createElement('style');
       el.id = `ceyecetify`;
       el.textContent = (String.raw`
-  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-34396-uNMnpZ5WFgHI/1a064b4438744/style.css */
+  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-1138-QDjdPWFNbXg2/1a0669342d92/style.css */
 :root {
   --empty: #00000000;
   --almost-empty: #00000040;
@@ -849,6 +849,9 @@
 }
 .tsCJQaqF4ALEqTft .main-actionBar-ActionBarRow [aria-haspopup=menu] {
   display: none !important;
+}
+.tsCJQaqF4ALEqTft .artist-artistDiscography-headerContainer.artist-artistDiscography-firstAlbum {
+  background-color: none !important;
 }
 .main-actionBar-ActionBarContainer .main-shelf-shelf.Shelf {
   padding-bottom: 10px !important;
@@ -1401,6 +1404,7 @@ button[data-testid=cover-art-button] {
   width: 220px !important;
   margin: auto;
   display: contents;
+  pointer-events: none;
 }
 .main-entityHeader-backgroundColor,
 .aotfMYhXr8Ag8I7a,
