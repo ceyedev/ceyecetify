@@ -502,11 +502,6 @@
     getCssColor2 = getCssColor, parseHexColor2 = parseHexColor, readPalette2 = readPalette, clonePalette2 = clonePalette, lerp2 = lerp, lerpColor2 = lerpColor, smooth2 = smooth, hash2 = hash, noise2 = noise, fbm2 = fbm, resize2 = resize, updateColors2 = updateColors, draw2 = draw;
     const style = document.createElement("style");
     style.textContent = `
-        ${PARENT_SELECTOR} {
-            position: relative;
-            overflow: hidden;
-        }
-
         ${PARENT_SELECTOR} > .ambience-noise {
             position: absolute;
             inset: -${CONFIG.overscan}%;
@@ -516,11 +511,6 @@
             transform: scale(${CONFIG.canvasScale});
             pointer-events: none;
             z-index: 0;
-        }
-
-        ${PARENT_SELECTOR} > *:not(.ambience-noise) {
-            position: relative;
-            z-index: 1;
         }
     `;
     document.head.appendChild(style);
@@ -571,6 +561,343 @@
   var resize2;
   var updateColors2;
   var draw2;
+  var React = Spicetify.React;
+  var ReactDOM = Spicetify.ReactDOM || window.ReactDOM;
+  function hexToRgb(hex) {
+    if (!hex)
+      return { r: 30, g: 215, b: 96, a: 1 };
+    hex = hex.replace("#", "");
+    return {
+      r: parseInt(hex.substring(0, 2), 16) || 0,
+      g: parseInt(hex.substring(2, 4), 16) || 0,
+      b: parseInt(hex.substring(4, 6), 16) || 0,
+      a: 1
+    };
+  }
+  var WAVE_CONFIG = {
+    sensitivity: 1,
+    friction: 0.85,
+    tension: 0.08,
+    brightness: 100,
+    minBarHeight: 15,
+    topCornerRadius: 15,
+    bottomCornerRadius: 15,
+    pixelsPerBar: 15,
+    delayMs: 0,
+    targetColorTop: null,
+    targetColorBottom: null
+  };
+  function VisualizadorPro() {
+    const canvasRef = React.useRef(null);
+    const audioDataRef = React.useRef({ segments: [], beats: [], loudnessHistory: [] });
+    const lastUriRef = React.useRef(null);
+    const initialColors = React.useMemo(() => {
+      const topHex = getComputedStyle(document.documentElement).getPropertyValue("--background-color-highlight").trim();
+      const bottomHex = getComputedStyle(document.documentElement).getPropertyValue("--background-color-dark").trim();
+      return { top: hexToRgb(topHex), bottom: hexToRgb(bottomHex) };
+    }, []);
+    const currentColorBotRef = React.useRef(__spreadValues({}, initialColors.bottom));
+    const currentColorTopRef = React.useRef(__spreadValues({}, initialColors.top));
+    const targetColorBotRef = React.useRef(
+      WAVE_CONFIG.targetColorBottom ? __spreadValues({}, WAVE_CONFIG.targetColorBottom) : __spreadValues({}, initialColors.bottom)
+    );
+    const targetColorTopRef = React.useRef(
+      WAVE_CONFIG.targetColorTop ? __spreadValues({}, WAVE_CONFIG.targetColorTop) : __spreadValues({}, initialColors.top)
+    );
+    const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const easeInOutQuad = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+    const lerpColor = (c, t, p) => ({
+      r: c.r + (t.r - c.r) * p,
+      g: c.g + (t.g - c.g) * p,
+      b: c.b + (t.b - c.b) * p,
+      a: c.a + (t.a - c.a) * p
+    });
+    const fetchAudioData = async () => {
+      var _a;
+      try {
+        const item = (_a = Spicetify.Player.data) == null ? void 0 : _a.item;
+        if (!item)
+          return;
+        const data = await Spicetify.getAudioData(item.uri);
+        audioDataRef.current = data ? {
+          segments: data.segments || [],
+          beats: data.beats || [],
+          loudnessHistory: []
+        } : { segments: [], beats: [], loudnessHistory: [] };
+        lastUriRef.current = item.uri;
+      } catch (e) {
+        audioDataRef.current = { segments: [], beats: [], loudnessHistory: [] };
+      }
+    };
+    React.useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas)
+        return;
+      const ctx = canvas.getContext("2d", { alpha: true });
+      let animationId;
+      let lastT = performance.now();
+      let internalClock = 0;
+      let lastP = 0;
+      let colorTransitionProgress = 1;
+      let bars = 1;
+      let heights = new Array(bars).fill(0);
+      let velocities = new Array(bars).fill(0);
+      let smoothVolume = 0;
+      let smoothPitches = new Array(12).fill(0);
+      fetchAudioData();
+      const onSongChange = () => {
+        internalClock = 0;
+        lastP = 0;
+        colorTransitionProgress = 0;
+        fetchAudioData();
+      };
+      Spicetify.Player.addEventListener("songchange", onSongChange);
+      const renderLoop = (now) => {
+        var _a, _b;
+        if (!(canvas == null ? void 0 : canvas.parentElement)) {
+          animationId = requestAnimationFrame(renderLoop);
+          return;
+        }
+        const currentUri = (_b = (_a = Spicetify.Player.data) == null ? void 0 : _a.item) == null ? void 0 : _b.uri;
+        if (currentUri && currentUri !== lastUriRef.current) {
+          fetchAudioData();
+        }
+        const parent = canvas.parentElement;
+        const logicalWidth = parent.clientWidth * 0.9;
+        const logicalHeight = Math.max(0, parent.clientHeight - 20);
+        if (logicalWidth <= 0 || logicalHeight <= 0) {
+          animationId = requestAnimationFrame(renderLoop);
+          return;
+        }
+        const dpr = window.devicePixelRatio || 1;
+        if (canvas.width !== logicalWidth * dpr || canvas.height !== logicalHeight * dpr) {
+          canvas.width = logicalWidth * dpr;
+          canvas.height = logicalHeight * dpr;
+        }
+        canvas.style.width = logicalWidth + "px";
+        canvas.style.height = logicalHeight + "px";
+        canvas.style.position = "absolute";
+        canvas.style.left = "50%";
+        canvas.style.bottom = "20px";
+        canvas.style.transform = "translateX(-50%)";
+        canvas.style.margin = "0";
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+        const newBars = Math.max(1, Math.floor(logicalWidth / WAVE_CONFIG.pixelsPerBar));
+        if (newBars !== bars) {
+          bars = newBars;
+          heights = new Array(bars).fill(WAVE_CONFIG.minBarHeight);
+          velocities = new Array(bars).fill(0);
+        }
+        if (WAVE_CONFIG.targetColorTop) {
+          targetColorTopRef.current = __spreadValues({}, WAVE_CONFIG.targetColorTop);
+        } else {
+          const cssTop = hexToRgb(getComputedStyle(document.documentElement).getPropertyValue("--background-color-highlight").trim());
+          if (cssTop.r !== targetColorTopRef.current.r || cssTop.g !== targetColorTopRef.current.g || cssTop.b !== targetColorTopRef.current.b) {
+            targetColorTopRef.current = cssTop;
+            colorTransitionProgress = 0;
+          }
+        }
+        if (WAVE_CONFIG.targetColorBottom) {
+          targetColorBotRef.current = __spreadValues({}, WAVE_CONFIG.targetColorBottom);
+        } else {
+          const cssBot = hexToRgb(getComputedStyle(document.documentElement).getPropertyValue("--current-ambience-color").trim());
+          if (cssBot.r !== targetColorBotRef.current.r || cssBot.g !== targetColorBotRef.current.g || cssBot.b !== targetColorBotRef.current.b) {
+            targetColorBotRef.current = cssBot;
+            colorTransitionProgress = 0;
+          }
+        }
+        const isPlaying2 = Spicetify.Player.isPlaying();
+        const { segments } = audioDataRef.current;
+        const pProg = (Spicetify.Player.getProgress() || 0) / 1e3;
+        const dt = Math.min((now - lastT) / 1e3, 0.05);
+        lastT = now;
+        if (Math.abs(pProg - lastP) > 0.3) {
+          internalClock = pProg;
+        } else if (pProg !== lastP) {
+          internalClock += (pProg - internalClock) * 0.35;
+        } else if (isPlaying2) {
+          internalClock += dt;
+        }
+        lastP = pProg;
+        const exactTime = internalClock + WAVE_CONFIG.delayMs / 1e3;
+        let targetPitches = new Array(12).fill(0);
+        let targetVolume = 0;
+        if (isPlaying2 && segments && segments.length > 0 && exactTime >= 0) {
+          const sIdx = segments.findIndex((s) => exactTime >= s.start && exactTime < s.start + s.duration);
+          if (sIdx !== -1) {
+            const s1 = segments[sIdx];
+            const s2 = segments[sIdx + 1] || s1;
+            const progress = Math.max(0, Math.min(1, (exactTime - s1.start) / Math.max(s1.duration, 1e-3)));
+            const ease = easeInOutCubic(progress);
+            const p1 = s1.pitches || new Array(12).fill(0);
+            const p2 = s2.pitches || p1;
+            for (let i = 0; i < 12; i++) {
+              targetPitches[i] = Math.max(0, p1[i] + (p2[i] - p1[i]) * ease);
+            }
+            const loudness = Math.max(0, Math.min(1, (s1.loudness_max + 60) / 60));
+            targetVolume = Math.pow(loudness, 0.65);
+          }
+        }
+        const volumeSpeed = targetVolume > smoothVolume ? 14 : 5;
+        smoothVolume += (targetVolume - smoothVolume) * (1 - Math.exp(-dt * volumeSpeed));
+        for (let i = 0; i < 12; i++) {
+          const speed = targetPitches[i] > smoothPitches[i] ? 16 : 7;
+          smoothPitches[i] += (targetPitches[i] - smoothPitches[i]) * (1 - Math.exp(-dt * speed));
+        }
+        colorTransitionProgress = Math.min(1, colorTransitionProgress + dt * 0.5);
+        const colorEase = easeInOutSine(colorTransitionProgress);
+        currentColorBotRef.current = lerpColor(currentColorBotRef.current, targetColorBotRef.current, colorEase);
+        currentColorTopRef.current = lerpColor(currentColorTopRef.current, targetColorTopRef.current, colorEase);
+        const cBot = currentColorBotRef.current;
+        const cTop = currentColorTopRef.current;
+        const finalTopR = Math.min(255, cTop.r + WAVE_CONFIG.brightness);
+        const finalTopG = Math.min(255, cTop.g + WAVE_CONFIG.brightness);
+        const finalTopB = Math.min(255, cTop.b + WAVE_CONFIG.brightness);
+        const grad = ctx.createLinearGradient(0, 0, 0, logicalHeight);
+        grad.addColorStop(0, `rgba(${finalTopR}, ${finalTopG}, ${finalTopB}, ${cTop.a})`);
+        grad.addColorStop(1, `rgba(${cBot.r}, ${cBot.g}, ${cBot.b}, ${cBot.a})`);
+        ctx.fillStyle = grad;
+        ctx.shadowBlur = 0;
+        const barWidth = logicalWidth / bars;
+        for (let i = 0; i < bars; i++) {
+          const normalized = i / (bars - 1);
+          const pitchPosition = normalized * 11;
+          const left = Math.floor(pitchPosition);
+          const right = Math.min(11, left + 1);
+          const mix = pitchPosition - left;
+          const easedMix = easeInOutQuad(mix);
+          const pitch = smoothPitches[left] * (1 - easedMix) + smoothPitches[right] * easedMix;
+          const frequencyShape = 1 - Math.abs(normalized - 0.5) * 0.15;
+          const targetHeight = pitch * smoothVolume * logicalHeight * frequencyShape * WAVE_CONFIG.sensitivity;
+          const clampedTarget = Math.max(WAVE_CONFIG.minBarHeight, Math.min(logicalHeight, targetHeight));
+          const spring = WAVE_CONFIG.tension;
+          const damping = WAVE_CONFIG.friction;
+          velocities[i] += (clampedTarget - heights[i]) * spring * dt * 60;
+          velocities[i] *= Math.pow(damping, dt * 60);
+          heights[i] += velocities[i] * dt * 60;
+          if (heights[i] < WAVE_CONFIG.minBarHeight) {
+            heights[i] = WAVE_CONFIG.minBarHeight;
+            velocities[i] = 0;
+          }
+          if (heights[i] > logicalHeight) {
+            heights[i] = logicalHeight;
+            velocities[i] = 0;
+          }
+          const finalHeight = Math.min(logicalHeight, Math.max(WAVE_CONFIG.minBarHeight, heights[i]));
+          const x = i * barWidth;
+          const y = logicalHeight - finalHeight;
+          const barDrawWidth = Math.max(1, barWidth - 3);
+          const topRadius = Math.min(WAVE_CONFIG.topCornerRadius, barDrawWidth / 2, finalHeight / 2);
+          const bottomRadius = Math.min(WAVE_CONFIG.bottomCornerRadius, barDrawWidth / 2, finalHeight / 2);
+          ctx.beginPath();
+          ctx.roundRect(x, y, barDrawWidth, finalHeight, [topRadius, topRadius, bottomRadius, bottomRadius]);
+          ctx.fill();
+        }
+        animationId = requestAnimationFrame(renderLoop);
+      };
+      animationId = requestAnimationFrame(renderLoop);
+      return () => {
+        cancelAnimationFrame(animationId);
+        Spicetify.Player.removeEventListener("songchange", onSongChange);
+      };
+    }, []);
+    return React.createElement(
+      "div",
+      {
+        style: {
+          width: "100%",
+          height: "100%",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          overflow: "hidden",
+          pointerEvents: "none"
+        }
+      },
+      React.createElement("canvas", {
+        ref: canvasRef,
+        style: { display: "block" }
+      })
+    );
+  }
+  var createButton = () => {
+    const sideButtonContainer = document.querySelector(".Root__now-playing-bar .main-nowPlayingBar-extraControls");
+    if (!sideButtonContainer || sideButtonContainer.querySelector('[aria-label="Ceye Waves Btn"]'))
+      return;
+    const button = document.createElement("button");
+    button.className = "main-genericButton-button l-player-btn";
+    button.setAttribute("aria-label", "Ceye Waves Btn");
+    const wrapper = document.createElement("span");
+    wrapper.className = "l-player-btn__wrapper";
+    wrapper.innerHTML = `
+        <svg xmlns="http://w3.org" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 10v3"></path><path d="M6 6v11"></path><path d="M10 3v18"></path><path d="M14 8v7"></path><path d="M18 5v13"></path><path d="M22 10v3"></path>
+        </svg>`;
+    button.appendChild(wrapper);
+    button.addEventListener("click", () => {
+      const container2 = document.querySelector(".main-nowPlayingBar-nowPlayingBar");
+      if (!container2)
+        return;
+      const existing = container2.querySelector(".ceye-waves-canvas");
+      if (existing) {
+        existing.style.transition = "height 0.5s ease, opacity 0.5s ease";
+        existing.style.height = "0";
+        existing.style.opacity = "0";
+        const onTransitionEnd = () => {
+          if (existing._reactRoot) {
+            if (existing._reactRoot.unmount)
+              existing._reactRoot.unmount();
+            else if (ReactDOM.unmountComponentAtNode)
+              ReactDOM.unmountComponentAtNode(existing);
+          }
+          existing.remove();
+          existing.removeEventListener("transitionend", onTransitionEnd);
+        };
+        existing.addEventListener("transitionend", onTransitionEnd);
+        button.classList.remove("main-genericButton-buttonActive", "main-genericButton-buttonActiveDot");
+        return;
+      }
+      const visualizerWrapper = document.createElement("div");
+      visualizerWrapper.className = "ceye-waves-canvas";
+      visualizerWrapper.style.width = "100%";
+      visualizerWrapper.style.height = "0";
+      visualizerWrapper.style.overflow = "hidden";
+      visualizerWrapper.style.position = "relative";
+      visualizerWrapper.style.opacity = "0";
+      visualizerWrapper.style.transition = "height 0.5s ease, opacity 0.5s ease";
+      let reactRoot;
+      if (ReactDOM.createRoot) {
+        reactRoot = ReactDOM.createRoot(visualizerWrapper);
+        reactRoot.render(React.createElement(VisualizadorPro));
+      } else if (ReactDOM.render) {
+        ReactDOM.render(React.createElement(VisualizadorPro), visualizerWrapper);
+        reactRoot = { unmount: () => ReactDOM.unmountComponentAtNode(visualizerWrapper) };
+      } else {
+        console.error("ReactDOM nicht verf\xFCgbar");
+        return;
+      }
+      visualizerWrapper._reactRoot = reactRoot;
+      container2.appendChild(visualizerWrapper);
+      const targetHeight = Math.max(container2.clientWidth / 4, 100);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          visualizerWrapper.style.height = targetHeight + "px";
+          visualizerWrapper.style.opacity = "1";
+        });
+      });
+      button.classList.add("main-genericButton-buttonActive", "main-genericButton-buttonActiveDot");
+    });
+    const miniplayer = sideButtonContainer.querySelector('[aria-label="Open Miniplayer"]');
+    if (miniplayer)
+      sideButtonContainer.insertBefore(button, miniplayer);
+    else
+      sideButtonContainer.appendChild(button);
+  };
+  createButton();
+  var observer4 = new MutationObserver(createButton);
+  observer4.observe(document.body, { childList: true, subtree: true });
 
   // ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/spicetify-creator/index.jsx
   (async () => {
@@ -582,7 +909,7 @@
       var el = document.createElement('style');
       el.id = `ceyecetify`;
       el.textContent = (String.raw`
-  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-1138-QDjdPWFNbXg2/1a0669c90a53/style.css */
+  /* ../../../../../private/var/folders/sw/v8f4vn6s70j30y4lprsdg7cw0000gn/T/tmp-2457-Tau5xirrB5oD/1a069d2561078/style.css */
 :root {
   --empty: #00000000;
   --almost-empty: #00000040;
@@ -868,6 +1195,9 @@
   position: relative;
   grid-column: 1 / -1;
 }
+.x-explicit-label {
+  display: none !important;
+}
 .artist-artistDiscography-topBar {
   background-color: var(--empty) !important;
   box-shadow: none !important;
@@ -899,10 +1229,17 @@
 #search-dropdown .os-scrollbar {
   display: none !important;
 }
-#search-dropdown [data-encore-id=listRowSubtitle] {
+#search-dropdown [data-overlayscrollbars-viewport="scrollbarHidden overflowXHidden overflowYScroll"] > :nth-child(1) {
   display: none !important;
 }
-#search-dropdown [data-overlayscrollbars-viewport="scrollbarHidden overflowXHidden overflowYScroll"] > :nth-child(1) {
+#search-dropdown [data-encore-id=listRow] button[aria-label=More] {
+  display: none;
+}
+#search-dropdown [data-encore-id=listRow] .x-entityImage-imageContainer,
+#search-dropdown [data-encore-id=listRow] .PQMaFYfZyRAAMjIZ {
+  background-color: var(--empty) !important;
+}
+#search-dropdown span:has(> span > .x-explicit-icon) {
   display: none !important;
 }
 .HOf9H18Ya0DkJ4_K {
@@ -911,6 +1248,101 @@
 }
 .HOf9H18Ya0DkJ4_K .search-searchCategory-contentArea {
   margin: auto !important;
+}
+#search-dropdown .main-actionBar-ActionBarContainer {
+  background-color: var(--current-ambience-color-transparent) !important;
+  border: 2px solid white;
+  border-radius: 16px;
+  transition: all 500ms ease;
+  backdrop-filter: blur(15px) brightness(30%);
+  animation: search-dropdown-intro alternate 0.3s;
+}
+@keyframes search-dropdown-intro {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.75) scaleY(0.25);
+    backdrop-filter: blur(0px) brightness(100%);
+  }
+  65% {
+    transform: scaleX(1.05) scaleY(1.05);
+    backdrop-filter: blur(15px) brightness(30%);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleX(1) scaleY(1);
+  }
+}
+#search-dropdown [data-encore-id=listRow] {
+  background-color: var(--empty) !important;
+  transform: scale(0.95);
+  transition: all 0.2s ease;
+  border: solid 1px;
+  border-color: var(--empty);
+}
+#search-dropdown [data-encore-id=listRow]:hover {
+  background-color: var(--current-ambience-color) !important;
+  transform: scale(1);
+  border-color: white;
+  transition:
+    all 0.5s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+#search-dropdown [data-encore-id=listRow] .e-10810-legacy-list-row__header button {
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s ease;
+}
+#search-dropdown [data-encore-id=listRow]:hover .e-10810-legacy-list-row__header button {
+  opacity: 1;
+  transform: scale(1);
+}
+#search-dropdown [data-encore-id=listRow] a:hover {
+  text-decoration: none !important;
+}
+#search-dropdown [data-encore-id=listRow] .gQsOCrC4O3kYXib2 {
+  transition: all 0.3s ease;
+}
+#search-dropdown [data-encore-id=listRow] .gQsOCrC4O3kYXib2 svg {
+  transform: scale(0.5);
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+#search-dropdown [data-encore-id=listRow]:hover .gQsOCrC4O3kYXib2 svg {
+  transform: scale(1);
+  opacity: 1;
+}
+#search-dropdown [data-encore-id=listRow]:has([data-encore-id="listRowSubtitle"]) [data-encore-id=listRowTitle] {
+  transform: translateY(10px);
+  transition: all 0.2s ease;
+}
+#search-dropdown [data-encore-id=listRow]:has([data-encore-id="listRowSubtitle"]):hover [data-encore-id=listRowTitle] {
+  transform: translateY(0);
+}
+#search-dropdown [data-encore-id=listRow] [data-encore-id=listRowSubtitle] {
+  transform: scale(0.9);
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+#search-dropdown [data-encore-id=listRow]:hover [data-encore-id=listRowSubtitle] {
+  transform: scale(1);
+  opacity: 1;
+}
+#searchPage .search-searchCategory-contentArea::after,
+#searchPage .search-searchCategory-contentArea::before {
+  background-image: none !important;
+}
+.main-trackList-trackListRow.main-trackList-trackListRowGrid [aria-haspopup=menu] {
+  display: none;
+}
+.main-trackList-trackListRow.main-trackList-trackListRowGrid button[aria-label="Add to Liked Songs"] {
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s ease;
+}
+.main-trackList-trackListRow.main-trackList-trackListRowGrid:hover button[aria-label="Add to Liked Songs"] {
+  opacity: 1;
+  transform: scale(1);
 }
 .main-trackList-trackListHeader {
   top: 0 !important;
@@ -921,6 +1353,9 @@
 .main-trackList-trackListHeader.Ltz8hFoxXpck1XAk {
   background-color: var(--current-ambience-color-dark) !important;
   box-shadow: none !important;
+}
+.main-trackList-trackListRow.main-trackList-trackListRowGrid span:has(> span[aria-label="Explicit"]) {
+  display: none !important;
 }
 .main-trackList-trackListRow.main-trackList-trackListRowGrid {
   background-color: var(--empty) !important;
@@ -1007,7 +1442,7 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
   display: none !important;
 }
 .main-home-content .search-searchCategory-contentArea::after,
-.search-searchCategory-contentArea::before {
+.main-home-content .search-searchCategory-contentArea::before {
   background-image: none !important;
 }
 .main-home-content [data-shelf=carousel] .e-10810-legacy-list-row__header-side img {
@@ -1116,7 +1551,7 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
   border: solid 3px rgba(255, 255, 255, 0.5);
   border-radius: 16px;
   transition: all 0.2s ease;
-  transform: scale(0.9);
+  transform: scale(0.95);
 }
 [aria-label="Connect to a device"] [aria-label="Current device"]:hover {
   background-color: var(--current-ambience-color) !important;
@@ -1141,7 +1576,7 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
 .wskqaMF_9vIdCfEN.qniLkpbkE7Y8nGFS {
   display: none;
 }
-[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div::after,
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"]) > div li > div::after,
 [aria-label=Queue] [aria-label="Recently played"] li > div::after {
   inset: 0;
   width: auto !important;
@@ -1149,20 +1584,20 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
   background-color: var(--empty) !important;
   transition: all 0.2s ease;
   border: solid 1px transparent;
-  transform: scale(0.9);
+  transform: scale(0.95);
 }
-[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div:hover::after,
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"]) > div li > div:hover::after,
 [aria-label=Queue] [aria-label="Recently played"] li > div:hover::after {
   background-color: var(--current-ambience-color) !important;
   border-color: white;
   transform: scale(1);
 }
-[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div,
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"]) > div li > div,
 [aria-label=Queue] [aria-label="Recently played"] li > div {
   transition: all 0.2s ease;
-  transform: scale(0.9);
+  transform: scale(0.95);
 }
-[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div:hover,
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"]) > div li > div:hover,
 [aria-label=Queue] [aria-label="Recently played"] li > div:hover {
   transform: scale(1);
 }
@@ -1181,6 +1616,37 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {
 [aria-label=Queue] .main-nowPlayingView-headerWrapper button {
   background-color: var(--empty) !important;
   font-size: 20px;
+}
+.Root__right-sidebar span:has(> span > span > .x-explicit-icon) {
+  display: none !important;
+}
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) .znTd53DrNIcJnJvv.K7NGZRkvXDE1F7Qp {
+  transition: all 0.3s ease;
+}
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) .main-playButton-PlayButton svg {
+  transform: scale(0.5);
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) li > div:hover .main-playButton-PlayButton svg {
+  transform: scale(1);
+  opacity: 1;
+}
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) li > div [data-encore-id=listRowTitle] {
+  transform: translateY(10px);
+  transition: all 0.2s ease;
+}
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) li > div:hover [data-encore-id=listRowTitle] {
+  transform: translateY(0);
+}
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) li > div [data-encore-id=listRowSubtitle] {
+  transform: scale(0.9);
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+[aria-label=Queue] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) li > div:hover [data-encore-id=listRowSubtitle] {
+  transform: scale(1);
+  opacity: 1;
 }
 body:not(:has(.fullscreen-content)) .lucid-background {
   display: none !important;
@@ -1439,6 +1905,33 @@ button[data-testid=cover-art-button] {
 .main-connectBar-connected {
   justify-content: center !important;
   margin: 0 20px 10px 20px;
+}
+#searchPage .main-gridContainer-gridContainer [role=listitem] img {
+  transform: rotate(0);
+  width: 100%;
+  filter: blur(0px);
+  -webkit-mask-image: linear-gradient(to bottom, #00000005 17%, black 30%);
+  mask-image: linear-gradient(to bottom, #00000005 17%, black 30%);
+}
+#searchPage .main-gridContainer-gridContainer [role=listitem] {
+  aspect-ratio: 1;
+}
+#searchPage .main-gridContainer-gridContainer [role=listitem] > :nth-child(1) > :nth-child(1) {
+  border-radius: 16px !important;
+}
+#searchPage .main-gridContainer-gridContainer [role=listitem] .encore-text-title-small {
+  width: 100%;
+  padding: 10px 5px 2px 5px;
+  display: flex !important;
+  justify-content: center !important;
+}
+#searchPage .main-gridContainer-gridContainer [role=listitem] .encore-text-title-small > :nth-child(1) {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+#context-menu .main-contextMenu-menuItem [aria-disabled=true] {
+  display: none;
 }
 
       `).trim();

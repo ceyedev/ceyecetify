@@ -147,8 +147,6 @@
 [data-testid="album-page"] .main-actionBar-ActionBarRow > :nth-child(3) {display: none !important;}
 [data-testid="album-page"] .main-actionBar-ActionBarRow > :nth-child(4) {display: none !important;}
 [data-testid="album-page"] .main-actionBar-ActionBarRow > :nth-child(5) {display: none !important;}
-
-
 /*#endregion*/
 
 
@@ -173,6 +171,9 @@
 /*max-width songs*/
 .tsCJQaqF4ALEqTft .main-gridContainer-gridContainerMargin > :nth-child(1) {width: 100% !important; position: relative; grid-column: 1 / -1;}
 
+/*Hide Explicit icon*/
+.x-explicit-label {display: none !important;}
+
 /*In Discography - top bar*/
 .artist-artistDiscography-topBar {background-color: var(--empty) !important; box-shadow: none !important; position: relative;}
 .artist-artistDiscography-topBar {display: grid !important; grid-template-columns: 1fr auto auto;}
@@ -185,16 +186,50 @@
 
 /*#region*/ /*Search List*/
 
-/*Hide Verified, Recent-text, scrollbar, subtext, navinfos*/
+/*Hide Verified, Recent-text, scrollbar, navinfos, "..." in results, BG of search icon*/
 [data-encore-id="verifiedBadge"] {display: none !important;}
 #search-dropdown p.encore-text-body-medium-bold {display: none !important;}
 #search-dropdown .os-scrollbar {display: none !important;}
-#search-dropdown [data-encore-id="listRowSubtitle"] {display: none !important;}
 #search-dropdown [data-overlayscrollbars-viewport="scrollbarHidden overflowXHidden overflowYScroll"] > :nth-child(1) {display: none !important;}
+#search-dropdown [data-encore-id="listRow"] button[aria-label="More"] {display: none;}
+#search-dropdown [data-encore-id="listRow"] .x-entityImage-imageContainer, #search-dropdown [data-encore-id="listRow"] .PQMaFYfZyRAAMjIZ {background-color: var(--empty) !important;}
+
+/*Hide Explicit icon*/
+#search-dropdown span:has( > span > .x-explicit-icon) {display: none !important;}
 
 /*Top Category Filters*/
 .HOf9H18Ya0DkJ4_K {background-color: transparent !important; position: relative;}
 .HOf9H18Ya0DkJ4_K .search-searchCategory-contentArea {margin: auto !important;}
+
+/*Style container with load animation, style search items*/
+#search-dropdown .main-actionBar-ActionBarContainer {background-color: var(--current-ambience-color-transparent) !important; border: 2px solid white; border-radius: 16px; transition: all 500ms ease; backdrop-filter: blur(15px) brightness(30%); animation: search-dropdown-intro alternate 0.3s;}
+@keyframes search-dropdown-intro {
+  0% {opacity: 0; transform: scaleX(0.75) scaleY(0.25); backdrop-filter: blur(0px) brightness(100%);}
+  65% {transform: scaleX(1.05) scaleY(1.05); backdrop-filter: blur(15px) brightness(30%);}
+  100% {opacity: 1; transform: scaleX(1) scaleY(1);}
+}
+#search-dropdown [data-encore-id="listRow"] {background-color: var(--empty) !important; transform: scale(0.95); transition: all 0.2s ease; border: solid 1px; border-color: var(--empty);}
+#search-dropdown [data-encore-id="listRow"]:hover {background-color: var(--current-ambience-color) !important; transform: scale(1); border-color: white; transition: all 0.5s ease, transform 0.2s ease, border-color 0.2s ease;}
+
+/*Add song only show on hover, no underline when hovering on search result*/
+#search-dropdown [data-encore-id="listRow"] .e-10810-legacy-list-row__header button {opacity: 0; transform: scale(0.5); transition: all 0.2s ease;}
+#search-dropdown [data-encore-id="listRow"]:hover .e-10810-legacy-list-row__header button {opacity: 1; transform: scale(1);}
+#search-dropdown [data-encore-id="listRow"] a:hover {text-decoration: none !important;}
+
+/*Animate Play icon on hover*/
+#search-dropdown [data-encore-id="listRow"] .gQsOCrC4O3kYXib2 {transition: all 0.3s ease;}
+#search-dropdown [data-encore-id="listRow"] .gQsOCrC4O3kYXib2 svg {transform: scale(0.5); opacity: 0; transition: all 0.2s ease;}
+#search-dropdown [data-encore-id="listRow"]:hover .gQsOCrC4O3kYXib2 svg {transform: scale(1); opacity: 1;}
+
+/*Animate Text on hover*/
+#search-dropdown [data-encore-id="listRow"]:has([data-encore-id="listRowSubtitle"]) [data-encore-id="listRowTitle"] {transform: translateY(10px); transition: all 0.2s ease;}
+#search-dropdown [data-encore-id="listRow"]:has([data-encore-id="listRowSubtitle"]):hover [data-encore-id="listRowTitle"] {transform: translateY(0);}
+#search-dropdown [data-encore-id="listRow"] [data-encore-id="listRowSubtitle"] {transform: scale(0.9); opacity: 0; transition: all 0.2s ease;}
+#search-dropdown [data-encore-id="listRow"]:hover [data-encore-id="listRowSubtitle"] {transform: scale(1); opacity: 1;}
+
+/*Hide scroll gradient in result first row*/
+#searchPage .search-searchCategory-contentArea::after, #searchPage .search-searchCategory-contentArea::before {background-image: none !important;}
+
 /*#endregion*/
 
 
@@ -202,12 +237,19 @@
 
 /*#region*/ /*Songs*/
 
-/*Hide Explicit icon*/
-/*.main-trackList-rowMainContent:has(.x-explicit-label) > :nth-child(2) {display: none !important;}*/
+/*Hide "..." btn*/
+.main-trackList-trackListRow.main-trackList-trackListRowGrid [aria-haspopup="menu"] {display: none;}
+
+/*Add song only show on hover*/
+.main-trackList-trackListRow.main-trackList-trackListRowGrid button[aria-label="Add to Liked Songs"] {opacity: 0; transform: scale(0.5); transition: all 0.2s ease;}
+.main-trackList-trackListRow.main-trackList-trackListRowGrid:hover   button[aria-label="Add to Liked Songs"] {opacity: 1; transform: scale(1);}
 
 /*Top Hover Bar*/
 .main-trackList-trackListHeader {top: 0 !important; border-radius: 8px; background-color: transparent !important; transition: all 0.3s ease;}
 .main-trackList-trackListHeader.Ltz8hFoxXpck1XAk {background-color: var(--current-ambience-color-dark) !important; box-shadow: none !important;}
+
+/*Hide Explicit icon*/
+.main-trackList-trackListRow.main-trackList-trackListRowGrid span:has(> span[aria-label="Explicit"]) {display: none !important;}
 
 /*Animation Stuff*/
 .main-trackList-trackListRow.main-trackList-trackListRowGrid {background-color: var(--empty) !important; transform: scale(0.975); transition: all 0.2s ease; border: solid 1px; border-color: var(--empty);}
@@ -276,7 +318,7 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {display: none;
 .main-home-content .main-shelf-titleWrapper .e-10810-legacy-list-row__header div:has(.encore-text-body-small-bold) {display: none !important;}
 .main-home-content .main-shelf-titleWrapper .e-10810-legacy-list-row__header {justify-content: center;}
 .main-home-content .main-shelf-titleWrapper .e-10810-legacy-list-row__header p {display: none !important;}
-.main-home-content .search-searchCategory-contentArea::after, .search-searchCategory-contentArea::before {background-image: none !important;}
+.main-home-content .search-searchCategory-contentArea::after, .main-home-content .search-searchCategory-contentArea::before {background-image: none !important;}
 .main-home-content [data-shelf="carousel"] .e-10810-legacy-list-row__header-side img {display: none !important;}
 .search-searchCategory-categoryGrid [data-carousel-item="true"]:has([aria-label="Music — Following"]) {display: none !important;}
 .main-home-content .C8qLX8lOHwAx63FP.bKWw7XkMnYJ6al1a {display: none !important;}
@@ -287,9 +329,9 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {display: none;
 
 
 /*#region*/ /*Right_Click_Menus*/
-.main-playlistEditDetailsModal-container, .main-trackCreditsModalV2-container, .profile-userEditDetails-container{backdrop-filter: blur(15px) brightness(120%); background-color: #00000050 !important; border-radius: 8px; border: solid 2px white;transition: all 500ms ease;}
+.main-playlistEditDetailsModal-container, .main-trackCreditsModalV2-container, .profile-userEditDetails-container {backdrop-filter: blur(15px) brightness(120%); background-color: #00000050 !important; border-radius: 8px; border: solid 2px white;transition: all 500ms ease;}
 
-.main-contextMenu-menu{
+.main-contextMenu-menu {
     position: relative;
     background: transparent !important;
     border: 2px solid white;
@@ -299,11 +341,11 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {display: none;
     transition: all 500ms ease;    
 }
 
-.main-contextMenu-menu .main-contextMenu-menu{
+.main-contextMenu-menu .main-contextMenu-menu {
     margin-left: 4px;   
 }
 
-.main-contextMenu-menu::before{
+.main-contextMenu-menu::before {
     content: "";
     position: absolute;
     inset: 0;
@@ -399,7 +441,7 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {display: none;
   box-shadow: none !important;
 }
 
-[aria-label="Connect to a device"] [aria-label="Current device"] {background-color: var(--almost-empty) !important; border: solid 3px rgba(255, 255, 255, 0.5); border-radius: 16px; transition: all 0.2s ease; transform: scale(0.9);}
+[aria-label="Connect to a device"] [aria-label="Current device"] {background-color: var(--almost-empty) !important; border: solid 3px rgba(255, 255, 255, 0.5); border-radius: 16px; transition: all 0.2s ease; transform: scale(0.95);}
 [aria-label="Connect to a device"] [aria-label="Current device"]:hover {background-color: var(--current-ambience-color) !important; border: solid 3px white; transform: scale(1)}
 [aria-label="Connect to a device"] [aria-label="Current device"]:hover > :nth-child(1) {background-color: transparent !important;}
 
@@ -423,22 +465,22 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {display: none;
 
 
 
-[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div::after, [aria-label="Queue"] [aria-label="Recently played"] li > div::after {
+[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"]) > div li > div::after, [aria-label="Queue"] [aria-label="Recently played"] li > div::after {
     inset: 0;
     width: auto !important;
     height: auto !important;
     background-color: var(--empty) !important;
     transition: all 0.2s ease;
     border: solid 1px transparent;
-    transform: scale(0.9);
+    transform: scale(0.95);
 }
-[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div:hover::after, [aria-label="Queue"] [aria-label="Recently played"] li > div:hover::after {background-color: var(--current-ambience-color) !important; border-color: white; transform: scale(1);}
+[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"]) > div li > div:hover::after, [aria-label="Queue"] [aria-label="Recently played"] li > div:hover::after {background-color: var(--current-ambience-color) !important; border-color: white; transform: scale(1);}
 
-[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div, [aria-label="Queue"] [aria-label="Recently played"] li > div {
+[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"]) > div li > div, [aria-label="Queue"] [aria-label="Recently played"] li > div {
     transition: all 0.2s ease;
-    transform: scale(0.9);
+    transform: scale(0.95);
 }
-[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"]) > div li > div:hover, [aria-label="Queue"] [aria-label="Recently played"] li > div:hover {transform: scale(1);}
+[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"]) > div li > div:hover, [aria-label="Queue"] [aria-label="Recently played"] li > div:hover {transform: scale(1);}
 [aria-label="Queue"] button[aria-haspopup="menu"] {display: none;}
 #queue-panel h2 {font-size: 20px;}
 #queue-panel .vdNj5Kuby0wJApMc {justify-content: left !important;}
@@ -450,6 +492,21 @@ section.ovJXBDQa8ZsE4nc_.main-shelf-shelf.Shelf.Llk1ve1sjOIOuoPP {display: none;
 
 [aria-label="Queue"] .main-nowPlayingView-headerWrapper {justify-content: center !important;}
 [aria-label="Queue"] .main-nowPlayingView-headerWrapper button {background-color: var(--empty) !important; font-size: 20px;}
+
+/*Hide Explicit icon*/
+.Root__right-sidebar span:has(> span > span > .x-explicit-icon) {display: none !important;}
+
+
+/*Animate Play icon on hover*/
+[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) .znTd53DrNIcJnJvv.K7NGZRkvXDE1F7Qp {transition: all 0.3s ease;}
+[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) .main-playButton-PlayButton svg {transform: scale(0.5); opacity: 0; transition: all 0.2s ease;}
+[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) li > div:hover .main-playButton-PlayButton svg {transform: scale(1); opacity: 1;}
+
+[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) li > div [data-encore-id="listRowTitle"] {transform: translateY(10px); transition: all 0.2s ease;}
+[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) li > div:hover [data-encore-id="listRowTitle"] {transform: translateY(0);}
+[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) li > div [data-encore-id="listRowSubtitle"] {transform: scale(0.9); opacity: 0; transition: all 0.2s ease;}
+[aria-label="Queue"] :is([aria-label="Next up"], [aria-label="Now playing"], [aria-label="Next in queue"], [aria-label="Recently played"]) li > div:hover [data-encore-id="listRowSubtitle"] {transform: scale(1); opacity: 1;}
+
 /*#endregion*/
 
 
@@ -887,4 +944,29 @@ background-color: #00000000 !important;
     overflow-y: hidden !important;
 }
 
+
+
+
+
+
 .main-connectBar-connected {justify-content: center !important; margin: 0 20px 10px 20px;}
+
+
+
+
+
+
+
+
+
+
+/*Category items*/
+#searchPage .main-gridContainer-gridContainer [role="listitem"] img {transform: rotate(0); width: 100%; filter: blur(0px); mask-image: linear-gradient(to bottom, #00000005 17%, black 30%);}
+#searchPage .main-gridContainer-gridContainer [role="listitem"] {aspect-ratio: 1;}
+#searchPage .main-gridContainer-gridContainer [role="listitem"] > :nth-child(1) > :nth-child(1) {border-radius: 16px !important;}
+#searchPage .main-gridContainer-gridContainer [role="listitem"] .encore-text-title-small {width: 100%; padding: 10px 5px 2px 5px; display: flex !important; justify-content: center !important;}
+#searchPage .main-gridContainer-gridContainer [role="listitem"] .encore-text-title-small > :nth-child(1) {white-space: nowrap; text-overflow: ellipsis; overflow: hidden;}
+
+
+/*right click, disable not clickable menus*/
+#context-menu .main-contextMenu-menuItem [aria-disabled="true"] {display: none;}

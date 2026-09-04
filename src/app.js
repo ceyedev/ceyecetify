@@ -432,11 +432,6 @@ if (container) {
     const style = document.createElement("style");
 
     style.textContent = `
-        ${PARENT_SELECTOR} {
-            position: relative;
-            overflow: hidden;
-        }
-
         ${PARENT_SELECTOR} > .ambience-noise {
             position: absolute;
             inset: -${CONFIG.overscan}%;
@@ -446,11 +441,6 @@ if (container) {
             transform: scale(${CONFIG.canvasScale});
             pointer-events: none;
             z-index: 0;
-        }
-
-        ${PARENT_SELECTOR} > *:not(.ambience-noise) {
-            position: relative;
-            z-index: 1;
         }
     `;
 
@@ -929,5 +919,396 @@ if (Spicetify.Player.data) {
 setTimeout(() => {
     updateAmbienceColor();
 }, 5000);
-
 */
+
+
+
+
+
+
+
+
+
+
+
+const React = Spicetify.React;
+const ReactDOM = Spicetify.ReactDOM || window.ReactDOM;
+
+function hexToRgb(hex) {
+    if (!hex) return { r: 30, g: 215, b: 96, a: 1 };
+    hex = hex.replace('#', '');
+    return {
+        r: parseInt(hex.substring(0, 2), 16) || 0,
+        g: parseInt(hex.substring(2, 4), 16) || 0,
+        b: parseInt(hex.substring(4, 6), 16) || 0,
+        a: 1.0
+    };
+}
+
+const WAVE_CONFIG = {
+    sensitivity: 1.0,
+    friction: 0.85,
+    tension: 0.08,
+    brightness: 100,
+    minBarHeight: 15,
+    topCornerRadius: 15,
+    bottomCornerRadius: 15,
+    pixelsPerBar: 15,
+    delayMs: 0,
+
+    targetColorTop: null,
+    targetColorBottom: null
+};
+
+function VisualizadorPro() {
+    const canvasRef = React.useRef(null);
+    const audioDataRef = React.useRef({ segments: [], beats: [], loudnessHistory: [] });
+    const lastUriRef = React.useRef(null);
+
+    const initialColors = React.useMemo(() => {
+        const topHex = getComputedStyle(document.documentElement)
+            .getPropertyValue("--background-color-highlight").trim();
+        const bottomHex = getComputedStyle(document.documentElement)
+            .getPropertyValue("--background-color-dark").trim();
+        return { top: hexToRgb(topHex), bottom: hexToRgb(bottomHex) };
+    }, []);
+
+    const currentColorBotRef = React.useRef({ ...initialColors.bottom });
+    const currentColorTopRef = React.useRef({ ...initialColors.top });
+    const targetColorBotRef = React.useRef(
+        WAVE_CONFIG.targetColorBottom ? { ...WAVE_CONFIG.targetColorBottom } : { ...initialColors.bottom }
+    );
+    const targetColorTopRef = React.useRef(
+        WAVE_CONFIG.targetColorTop ? { ...WAVE_CONFIG.targetColorTop } : { ...initialColors.top }
+    );
+
+    const easeInOutCubic = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    const easeInOutQuad = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const easeInOutSine = (t) => -(Math.cos(Math.PI * t) - 1) / 2;
+    const lerpColor = (c, t, p) => ({
+        r: c.r + (t.r - c.r) * p,
+        g: c.g + (t.g - c.g) * p,
+        b: c.b + (t.b - c.b) * p,
+        a: c.a + (t.a - c.a) * p
+    });
+
+    const fetchAudioData = async () => {
+        try {
+            const item = Spicetify.Player.data?.item;
+            if (!item) return;
+            const data = await Spicetify.getAudioData(item.uri);
+            audioDataRef.current = data ? {
+                segments: data.segments || [],
+                beats: data.beats || [],
+                loudnessHistory: []
+            } : { segments: [], beats: [], loudnessHistory: [] };
+            lastUriRef.current = item.uri;
+        } catch (e) {
+            audioDataRef.current = { segments: [], beats: [], loudnessHistory: [] };
+        }
+    };
+
+    React.useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d', { alpha: true });
+        let animationId;
+        let lastT = performance.now();
+        let internalClock = 0;
+        let lastP = 0;
+        let colorTransitionProgress = 1;
+        let bars = 1;
+        let heights = new Array(bars).fill(0);
+        let velocities = new Array(bars).fill(0);
+        let smoothVolume = 0;
+        let smoothPitches = new Array(12).fill(0);
+
+        fetchAudioData();
+
+        const onSongChange = () => {
+            internalClock = 0;
+            lastP = 0;
+            colorTransitionProgress = 0;
+            fetchAudioData();
+        };
+
+        Spicetify.Player.addEventListener("songchange", onSongChange);
+
+        const renderLoop = (now) => {
+            if (!canvas?.parentElement) {
+                animationId = requestAnimationFrame(renderLoop);
+                return;
+            }
+
+            const currentUri = Spicetify.Player.data?.item?.uri;
+            if (currentUri && currentUri !== lastUriRef.current) {
+                fetchAudioData();
+            }
+
+            const parent = canvas.parentElement;
+            const logicalWidth = parent.clientWidth * 0.9;
+            const logicalHeight = Math.max(0, parent.clientHeight - 20);
+
+            if (logicalWidth <= 0 || logicalHeight <= 0) {
+                animationId = requestAnimationFrame(renderLoop);
+                return;
+            }
+
+            const dpr = window.devicePixelRatio || 1;
+
+            if (canvas.width !== logicalWidth * dpr || canvas.height !== logicalHeight * dpr) {
+                canvas.width = logicalWidth * dpr;
+                canvas.height = logicalHeight * dpr;
+            }
+
+            canvas.style.width = logicalWidth + 'px';
+            canvas.style.height = logicalHeight + 'px';
+            canvas.style.position = "absolute";
+            canvas.style.left = "50%";
+            canvas.style.bottom = "20px";
+            canvas.style.transform = "translateX(-50%)";
+            canvas.style.margin = "0";
+
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+
+            const newBars = Math.max(1, Math.floor(logicalWidth / WAVE_CONFIG.pixelsPerBar));
+            if (newBars !== bars) {
+                bars = newBars;
+                heights = new Array(bars).fill(WAVE_CONFIG.minBarHeight);
+                velocities = new Array(bars).fill(0);
+            }
+
+            if (WAVE_CONFIG.targetColorTop) {
+                targetColorTopRef.current = { ...WAVE_CONFIG.targetColorTop };
+            } else {
+                const cssTop = hexToRgb(getComputedStyle(document.documentElement)
+                    .getPropertyValue("--background-color-highlight").trim());
+                if (cssTop.r !== targetColorTopRef.current.r || cssTop.g !== targetColorTopRef.current.g ||
+                    cssTop.b !== targetColorTopRef.current.b) {
+                    targetColorTopRef.current = cssTop;
+                    colorTransitionProgress = 0;
+                }
+            }
+
+            if (WAVE_CONFIG.targetColorBottom) {
+                targetColorBotRef.current = { ...WAVE_CONFIG.targetColorBottom };
+            } else {
+                const cssBot = hexToRgb(getComputedStyle(document.documentElement)
+                    .getPropertyValue("--current-ambience-color").trim());
+                if (cssBot.r !== targetColorBotRef.current.r || cssBot.g !== targetColorBotRef.current.g ||
+                    cssBot.b !== targetColorBotRef.current.b) {
+                    targetColorBotRef.current = cssBot;
+                    colorTransitionProgress = 0;
+                }
+            }
+
+            const isPlaying = Spicetify.Player.isPlaying();
+            const { segments } = audioDataRef.current;
+            const pProg = (Spicetify.Player.getProgress() || 0) / 1000;
+            const dt = Math.min((now - lastT) / 1000, 0.05);
+            lastT = now;
+
+            if (Math.abs(pProg - lastP) > 0.3) {
+                internalClock = pProg;
+            } else if (pProg !== lastP) {
+                internalClock += (pProg - internalClock) * 0.35;
+            } else if (isPlaying) {
+                internalClock += dt;
+            }
+            lastP = pProg;
+
+            const exactTime = internalClock + WAVE_CONFIG.delayMs / 1000;
+            let targetPitches = new Array(12).fill(0);
+            let targetVolume = 0;
+
+            if (isPlaying && segments && segments.length > 0 && exactTime >= 0) {
+                const sIdx = segments.findIndex(s => exactTime >= s.start && exactTime < s.start + s.duration);
+                if (sIdx !== -1) {
+                    const s1 = segments[sIdx];
+                    const s2 = segments[sIdx + 1] || s1;
+                    const progress = Math.max(0, Math.min(1, (exactTime - s1.start) / Math.max(s1.duration, 0.001)));
+                    const ease = easeInOutCubic(progress);
+                    const p1 = s1.pitches || new Array(12).fill(0);
+                    const p2 = s2.pitches || p1;
+                    for (let i = 0; i < 12; i++) {
+                        targetPitches[i] = Math.max(0, p1[i] + (p2[i] - p1[i]) * ease);
+                    }
+                    const loudness = Math.max(0, Math.min(1, (s1.loudness_max + 60) / 60));
+                    targetVolume = Math.pow(loudness, 0.65);
+                }
+            }
+
+            const volumeSpeed = targetVolume > smoothVolume ? 14 : 5;
+            smoothVolume += (targetVolume - smoothVolume) * (1 - Math.exp(-dt * volumeSpeed));
+            for (let i = 0; i < 12; i++) {
+                const speed = targetPitches[i] > smoothPitches[i] ? 16 : 7;
+                smoothPitches[i] += (targetPitches[i] - smoothPitches[i]) * (1 - Math.exp(-dt * speed));
+            }
+
+            colorTransitionProgress = Math.min(1, colorTransitionProgress + dt * 0.5);
+            const colorEase = easeInOutSine(colorTransitionProgress);
+            currentColorBotRef.current = lerpColor(currentColorBotRef.current, targetColorBotRef.current, colorEase);
+            currentColorTopRef.current = lerpColor(currentColorTopRef.current, targetColorTopRef.current, colorEase);
+
+            const cBot = currentColorBotRef.current;
+            const cTop = currentColorTopRef.current;
+            const finalTopR = Math.min(255, cTop.r + WAVE_CONFIG.brightness);
+            const finalTopG = Math.min(255, cTop.g + WAVE_CONFIG.brightness);
+            const finalTopB = Math.min(255, cTop.b + WAVE_CONFIG.brightness);
+
+            const grad = ctx.createLinearGradient(0, 0, 0, logicalHeight);
+            grad.addColorStop(0, `rgba(${finalTopR}, ${finalTopG}, ${finalTopB}, ${cTop.a})`);
+            grad.addColorStop(1, `rgba(${cBot.r}, ${cBot.g}, ${cBot.b}, ${cBot.a})`);
+            ctx.fillStyle = grad;
+            ctx.shadowBlur = 0;
+
+            const barWidth = logicalWidth / bars;
+            for (let i = 0; i < bars; i++) {
+                const normalized = i / (bars - 1);
+                const pitchPosition = normalized * 11;
+                const left = Math.floor(pitchPosition);
+                const right = Math.min(11, left + 1);
+                const mix = pitchPosition - left;
+                const easedMix = easeInOutQuad(mix);
+                const pitch = smoothPitches[left] * (1 - easedMix) + smoothPitches[right] * easedMix;
+                const frequencyShape = 1 - Math.abs(normalized - 0.5) * 0.15;
+                const targetHeight = pitch * smoothVolume * logicalHeight * frequencyShape * WAVE_CONFIG.sensitivity;
+                const clampedTarget = Math.max(WAVE_CONFIG.minBarHeight, Math.min(logicalHeight, targetHeight));
+
+                const spring = WAVE_CONFIG.tension;
+                const damping = WAVE_CONFIG.friction;
+                velocities[i] += (clampedTarget - heights[i]) * spring * dt * 60;
+                velocities[i] *= Math.pow(damping, dt * 60);
+                heights[i] += velocities[i] * dt * 60;
+
+                if (heights[i] < WAVE_CONFIG.minBarHeight) {
+                    heights[i] = WAVE_CONFIG.minBarHeight;
+                    velocities[i] = 0;
+                }
+                if (heights[i] > logicalHeight) {
+                    heights[i] = logicalHeight;
+                    velocities[i] = 0;
+                }
+
+                const finalHeight = Math.min(logicalHeight, Math.max(WAVE_CONFIG.minBarHeight, heights[i]));
+                const x = i * barWidth;
+                const y = logicalHeight - finalHeight;
+                const barDrawWidth = Math.max(1, barWidth - 3);
+                const topRadius = Math.min(WAVE_CONFIG.topCornerRadius, barDrawWidth / 2, finalHeight / 2);
+                const bottomRadius = Math.min(WAVE_CONFIG.bottomCornerRadius, barDrawWidth / 2, finalHeight / 2);
+
+                ctx.beginPath();
+                ctx.roundRect(x, y, barDrawWidth, finalHeight, [topRadius, topRadius, bottomRadius, bottomRadius]);
+                ctx.fill();
+            }
+
+            animationId = requestAnimationFrame(renderLoop);
+        };
+
+        animationId = requestAnimationFrame(renderLoop);
+        return () => {
+            cancelAnimationFrame(animationId);
+            Spicetify.Player.removeEventListener("songchange", onSongChange);
+        };
+    }, []);
+
+    return React.createElement('div', {
+        style: {
+            width: '100%',
+            height: '100%',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            overflow: 'hidden',
+            pointerEvents: 'none'
+        }
+    },
+        React.createElement('canvas', {
+            ref: canvasRef,
+            style: { display: 'block' }
+        })
+    );
+}
+
+const createButton = () => {
+    const sideButtonContainer = document.querySelector('.Root__now-playing-bar .main-nowPlayingBar-extraControls');
+    if (!sideButtonContainer || sideButtonContainer.querySelector('[aria-label="Ceye Waves Btn"]')) return;
+
+    const button = document.createElement('button');
+    button.className = 'main-genericButton-button l-player-btn';
+    button.setAttribute('aria-label', 'Ceye Waves Btn');
+
+    const wrapper = document.createElement('span');
+    wrapper.className = 'l-player-btn__wrapper';
+    wrapper.innerHTML = `
+        <svg xmlns="http://w3.org" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 10v3"></path><path d="M6 6v11"></path><path d="M10 3v18"></path><path d="M14 8v7"></path><path d="M18 5v13"></path><path d="M22 10v3"></path>
+        </svg>`;
+    button.appendChild(wrapper);
+
+    button.addEventListener('click', () => {
+        const container = document.querySelector('.main-nowPlayingBar-nowPlayingBar');
+        if (!container) return;
+
+        const existing = container.querySelector('.ceye-waves-canvas');
+        if (existing) {
+            existing.style.transition = 'height 0.5s ease, opacity 0.5s ease';
+            existing.style.height = '0';
+            existing.style.opacity = '0';
+            const onTransitionEnd = () => {
+                if (existing._reactRoot) {
+                    if (existing._reactRoot.unmount) existing._reactRoot.unmount();
+                    else if (ReactDOM.unmountComponentAtNode) ReactDOM.unmountComponentAtNode(existing);
+                }
+                existing.remove();
+                existing.removeEventListener('transitionend', onTransitionEnd);
+            };
+            existing.addEventListener('transitionend', onTransitionEnd);
+            button.classList.remove('main-genericButton-buttonActive', 'main-genericButton-buttonActiveDot');
+            return;
+        }
+
+        const visualizerWrapper = document.createElement('div');
+        visualizerWrapper.className = 'ceye-waves-canvas';
+        visualizerWrapper.style.width = '100%';
+        visualizerWrapper.style.height = '0';
+        visualizerWrapper.style.overflow = 'hidden';
+        visualizerWrapper.style.position = 'relative';
+        visualizerWrapper.style.opacity = '0';
+        visualizerWrapper.style.transition = 'height 0.5s ease, opacity 0.5s ease';
+
+        let reactRoot;
+        if (ReactDOM.createRoot) {
+            reactRoot = ReactDOM.createRoot(visualizerWrapper);
+            reactRoot.render(React.createElement(VisualizadorPro));
+        } else if (ReactDOM.render) {
+            ReactDOM.render(React.createElement(VisualizadorPro), visualizerWrapper);
+            reactRoot = { unmount: () => ReactDOM.unmountComponentAtNode(visualizerWrapper) };
+        } else {
+            console.error('ReactDOM nicht verfügbar');
+            return;
+        }
+        visualizerWrapper._reactRoot = reactRoot;
+        container.appendChild(visualizerWrapper);
+
+        const targetHeight = Math.max(container.clientWidth / 4, 100);
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                visualizerWrapper.style.height = targetHeight + 'px';
+                visualizerWrapper.style.opacity = '1';
+            });
+        });
+
+        button.classList.add('main-genericButton-buttonActive', 'main-genericButton-buttonActiveDot');
+    });
+
+    const miniplayer = sideButtonContainer.querySelector('[aria-label="Open Miniplayer"]');
+    if (miniplayer) sideButtonContainer.insertBefore(button, miniplayer);
+    else sideButtonContainer.appendChild(button);
+};
+
+createButton();
+const observer4 = new MutationObserver(createButton);
+observer4.observe(document.body, { childList: true, subtree: true });
