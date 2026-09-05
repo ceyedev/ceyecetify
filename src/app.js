@@ -1,10 +1,13 @@
 import "./style.css";
 
+let isPlaying = false;
+
 async function main() {
   while (!Spicetify?.showNotification) {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
-  
+
+  isPlaying = Spicetify.Player.isPlaying();
   Spicetify.showNotification("ceyecetify loaded!");
 }
 
@@ -278,7 +281,6 @@ setTimeout(() => {
 
 
 
-let isPlaying = Spicetify.Player.isPlaying();
 function togglePlaying() {
     isPlaying = !isPlaying;
 }
@@ -1104,7 +1106,6 @@ function VisualizadorPro() {
                 }
             }
 
-            const isPlaying = Spicetify.Player.isPlaying();
             const { segments } = audioDataRef.current;
             const pProg = (Spicetify.Player.getProgress() || 0) / 1000;
             const dt = Math.min((now - lastT) / 1000, 0.05);
@@ -1312,3 +1313,333 @@ const createButton = () => {
 createButton();
 const observer4 = new MutationObserver(createButton);
 observer4.observe(document.body, { childList: true, subtree: true });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17V5h10v8"></path><circle cx="7" cy="18" r="2"></circle><circle cx="17" cy="14" r="2"></circle></svg>`;
+
+let currentQueueUid = null;
+
+const getNextTrack = () => {
+    const queueTrack = Spicetify.Queue.nextTracks[0];
+    return queueTrack?.contextTrack || null;
+};
+
+const updateNextTrack = (box, animate = true) => {
+    const track = getNextTrack();
+
+    if (!track) {
+        currentQueueUid = null;
+
+        const cover = box.querySelector('.ceye-next-track-cover');
+        const title = box.querySelector('.ceye-next-track-title');
+
+        if (animate) {
+            box.style.opacity = '0';
+            box.style.transform = 'translateY(4px)';
+        }
+
+        setTimeout(() => {
+            if (!box.isConnected) return;
+
+            cover.innerHTML = fallbackSvg;
+
+            if (cover.firstElementChild) {
+                cover.firstElementChild.style.width = '28px';
+                cover.firstElementChild.style.height = '28px';
+            }
+
+            title.textContent = 'No track in queue';
+
+            if (animate) {
+                requestAnimationFrame(() => {
+                    box.style.opacity = '1';
+                    box.style.transform = 'translateY(0)';
+                });
+            }
+        }, animate ? 180 : 0);
+
+        return;
+    }
+
+    const uid = Spicetify.Queue.nextTracks[0]?.contextTrack?.uid;
+
+    if (uid === currentQueueUid) return;
+
+    currentQueueUid = uid;
+
+    const metadata = track.metadata;
+
+    const imageUrl =
+        metadata?.image_xlarge_url ||
+        metadata?.image_large_url ||
+        metadata?.image_url ||
+        metadata?.image_small_url;
+
+    const titleText =
+        metadata?.title ||
+        'Unknown track';
+
+    const cover = box.querySelector('.ceye-next-track-cover');
+    const title = box.querySelector('.ceye-next-track-title');
+
+    const applyTrack = () => {
+        if (!box.isConnected) return;
+
+        title.textContent = titleText;
+
+        cover.innerHTML = '';
+
+        if (imageUrl) {
+            const img = document.createElement('img');
+
+            img.src = imageUrl;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.style.display = 'block';
+
+            cover.appendChild(img);
+        } else {
+            cover.innerHTML = fallbackSvg;
+
+            if (cover.firstElementChild) {
+                cover.firstElementChild.style.width = '28px';
+                cover.firstElementChild.style.height = '28px';
+            }
+        }
+
+        if (animate) {
+            requestAnimationFrame(() => {
+                box.style.opacity = '1';
+                box.style.transform = 'translateY(0)';
+            });
+        }
+    };
+
+    if (!animate) {
+        applyTrack();
+        return;
+    }
+
+    box.style.opacity = '0';
+    box.style.transform = 'translateY(4px)';
+
+    setTimeout(applyTrack, 180);
+};
+
+const closeBox = (box, button) => {
+    box.style.height = '0px';
+    box.style.opacity = '0';
+    box.style.transform = 'translateY(4px)';
+
+    button.classList.remove(
+        'main-genericButton-buttonActive',
+        'main-genericButton-buttonActiveDot'
+    );
+
+    const remove = () => {
+        if (box.isConnected) {
+            box.remove();
+        }
+    };
+
+    box.addEventListener('transitionend', remove, { once: true });
+
+    setTimeout(remove, 600);
+};
+
+const createNextTrackButton = () => {
+    const sideButtonContainer = document.querySelector(
+        '.Root__now-playing-bar .main-nowPlayingBar-extraControls'
+    );
+
+    if (
+        !sideButtonContainer ||
+        sideButtonContainer.querySelector('[aria-label="Ceye Next Track Btn"]')
+    ) {
+        return;
+    }
+
+    const button = document.createElement('button');
+
+    button.className = 'main-genericButton-button l-player-btn';
+    button.setAttribute('aria-label', 'Ceye Next Track Btn');
+
+    const wrapper = document.createElement('span');
+
+    wrapper.className = 'l-player-btn__wrapper';
+
+    wrapper.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M5 4v16"></path>
+            <path d="M9 5l8 7-8 7V5z"></path>
+            <path d="M20 5v14"></path>
+        </svg>
+    `;
+
+    button.appendChild(wrapper);
+
+    button.addEventListener('click', () => {
+        const container = document.querySelector(
+            '.main-nowPlayingBar-nowPlayingBar'
+        );
+
+        if (!container) return;
+
+        const existing = container.querySelector('.ceye-next-track-box');
+
+        if (existing) {
+            closeBox(existing, button);
+            return;
+        }
+
+        const box = document.createElement('div');
+
+        box.className = 'ceye-next-track-box';
+
+        box.style.width = '100%';
+        box.style.height = '0px';
+        box.style.opacity = '0';
+        box.style.overflow = 'hidden';
+        box.style.position = 'relative';
+        box.style.transform = 'translateY(4px)';
+        box.style.transition =
+            'height 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)';
+
+        const content = document.createElement('div');
+
+        content.style.height = '68px';
+        content.style.boxSizing = 'border-box';
+        content.style.display = 'flex';
+        content.style.alignItems = 'center';
+        content.style.gap = '12px';
+        content.style.padding = '0px 16px 10px 16px';
+        content.style.color = 'var(--spice-text)';
+
+        const cover = document.createElement('div');
+
+        cover.className = 'ceye-next-track-cover';
+
+        cover.style.width = '48px';
+        cover.style.height = '48px';
+        cover.style.minWidth = '48px';
+        cover.style.borderRadius = '6px';
+        cover.style.overflow = 'hidden';
+        cover.style.display = 'flex';
+        cover.style.alignItems = 'center';
+        cover.style.justifyContent = 'center';
+        cover.style.background = 'rgba(255,255,255,0.08)';
+
+        const text = document.createElement('div');
+
+        text.style.minWidth = '0';
+        text.style.display = 'flex';
+        text.style.flexDirection = 'column';
+        text.style.justifyContent = 'center';
+        text.style.gap = '2px';
+
+        const nextUp = document.createElement('div');
+
+        nextUp.textContent = 'next up:';
+
+        nextUp.style.fontSize = '10px';
+        nextUp.style.fontWeight = '600';
+        nextUp.style.opacity = '0.5';
+        nextUp.style.lineHeight = '12px';
+        nextUp.style.letterSpacing = '0.2px';
+
+        const title = document.createElement('div');
+
+        title.className = 'ceye-next-track-title';
+
+        title.style.fontSize = '18px';
+        title.style.fontWeight = '700';
+        title.style.whiteSpace = 'nowrap';
+        title.style.overflow = 'hidden';
+        title.style.textOverflow = 'ellipsis';
+        title.style.lineHeight = '18px';
+
+        text.appendChild(nextUp);
+        text.appendChild(title);
+
+        content.appendChild(cover);
+        content.appendChild(text);
+
+        box.appendChild(content);
+        container.appendChild(box);
+
+        currentQueueUid = null;
+
+        updateNextTrack(box, false);
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                box.style.height = '68px';
+                box.style.opacity = '1';
+                box.style.transform = 'translateY(0)';
+            });
+        });
+
+        button.classList.add(
+            'main-genericButton-buttonActive',
+            'main-genericButton-buttonActiveDot'
+        );
+    });
+
+    const wavesButton = sideButtonContainer.querySelector(
+        '[aria-label="Ceye Waves Btn"]'
+    );
+
+    const miniplayer = sideButtonContainer.querySelector(
+        '[aria-label="Open Miniplayer"]'
+    );
+
+    if (wavesButton) {
+        sideButtonContainer.insertBefore(button, wavesButton.nextSibling);
+    } else if (miniplayer) {
+        sideButtonContainer.insertBefore(button, miniplayer);
+    } else {
+        sideButtonContainer.appendChild(button);
+    }
+};
+
+createNextTrackButton();
+
+const observer5 = new MutationObserver(() => {
+    createNextTrackButton();
+
+    const box = document.querySelector('.ceye-next-track-box');
+
+    if (box) {
+        updateNextTrack(box);
+    }
+});
+
+observer5.observe(document.body, {
+    childList: true,
+    subtree: true
+});
